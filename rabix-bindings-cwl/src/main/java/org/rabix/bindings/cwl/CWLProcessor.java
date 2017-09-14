@@ -477,13 +477,20 @@ public class CWLProcessor implements ProtocolProcessor {
       }
       if (expr instanceof List) {
         for (Object e2 : ((List) expr)) {
-          secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, e2, append, onlyExisting));
+          addSecondaryFile(hashAlgorithm, filePath, workingDir, onlyExisting, secondaryFileMaps, e2, append);
         }
       } else {
-        secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, expr, append, onlyExisting));
+        addSecondaryFile(hashAlgorithm, filePath, workingDir, onlyExisting, secondaryFileMaps, expr, append);
       }
     }
     return secondaryFileMaps.isEmpty() ? null : secondaryFileMaps;
+  }
+
+  private static void addSecondaryFile(HashAlgorithm hashAlgorithm, String filePath, File workingDir, boolean onlyExisting,
+      List<Map<String, Object>> secondaryFileMaps, Object expr, boolean append) throws IOException {
+    Map<String, Object> secondaryFile = getSecondaryFile(hashAlgorithm, filePath, workingDir, expr, append, onlyExisting);
+    if (secondaryFile != null && !secondaryFile.isEmpty())
+      secondaryFileMaps.add(secondaryFile);
   }
 
   private static Map<String, Object> getSecondaryFile(HashAlgorithm hashAlgorithm, String filePath, File workingDir, Object expr, boolean append, boolean onlyExisting)
