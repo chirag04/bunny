@@ -388,7 +388,7 @@ public class CWLProcessor implements ProtocolProcessor {
     if (file.isDirectory()) {
       return fileData;
     }
-    List<?> secondaryFiles = getSecondaryFiles(job, hashAlgorithm, fileData, file.getAbsolutePath(), outputPort.getSecondaryFiles(), workingDir);
+    List<?> secondaryFiles = getSecondaryFiles(job, hashAlgorithm, fileData, file.getAbsolutePath(), outputPort.getSecondaryFiles(), workingDir, true);
     if (secondaryFiles != null) {
       CWLFileValueHelper.setSecondaryFiles(secondaryFiles, fileData);
     }
@@ -453,7 +453,7 @@ public class CWLProcessor implements ProtocolProcessor {
    * Gets secondary files (absolute paths)
    */
   @SuppressWarnings("unchecked")
-  public static List<Map<String, Object>> getSecondaryFiles(CWLJob job, HashAlgorithm hashAlgorithm, Map<String, Object> fileValue, String filePath, Object secs, File workingDir) throws CWLExpressionException, IOException {
+  public static List<Map<String, Object>> getSecondaryFiles(CWLJob job, HashAlgorithm hashAlgorithm, Map<String, Object> fileValue, String filePath, Object secs, File workingDir, boolean onlyExisting) throws CWLExpressionException, IOException {
     Object secondaryFilesObj = secs;
     if (secondaryFilesObj == null) {
       return null;
@@ -477,16 +477,16 @@ public class CWLProcessor implements ProtocolProcessor {
       }
       if (expr instanceof List) {
         for (Object e2 : ((List) expr)) {
-          secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, e2, append));
+          secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, e2, append, onlyExisting));
         }
       } else {
-        secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, expr, append));
+        secondaryFileMaps.add(getSecondaryFile(hashAlgorithm, filePath, workingDir, expr, append, onlyExisting));
       }
     }
     return secondaryFileMaps.isEmpty() ? null : secondaryFileMaps;
   }
 
-  private static Map<String, Object> getSecondaryFile(HashAlgorithm hashAlgorithm, String filePath, File workingDir, Object expr, boolean append)
+  private static Map<String, Object> getSecondaryFile(HashAlgorithm hashAlgorithm, String filePath, File workingDir, Object expr, boolean append, boolean onlyExisting)
       throws IOException {
     Map<String, Object> secondaryFileMap = new HashMap<>();
     if(expr instanceof String) {
@@ -508,8 +508,10 @@ public class CWLProcessor implements ProtocolProcessor {
         secondaryFilePath = Paths.get(filePath).getParent().resolve(suffix).toString();
       }
       File secondaryFile = new File(secondaryFilePath);
-      if(secondaryFile.exists())
+      
+      if (secondaryFile.exists() || !onlyExisting) {
         secondaryFileMap = fileToData(secondaryFile, hashAlgorithm);
+      }
     } else if (expr instanceof Map) {//also string
       secondaryFileMap = (Map<String, Object>) expr;
       postprocessCreatedResults(secondaryFileMap, hashAlgorithm, workingDir);
