@@ -134,7 +134,7 @@ public class EventProcessorImpl implements EventProcessor {
     case INIT:
       return true;
     case JOB_STATUS_UPDATE:
-      if (EventRecord.PersistentType.JOB_STATUS_UPDATE_COMPLETED.equals(event.getPersistentType())) {
+      if (EventRecord.PersistentType.JOB_STATUS_UPDATE_UNLOCKING.equals(event.getPersistentType())) {
         return true;
       }
       return false;

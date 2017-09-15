@@ -16,8 +16,8 @@ public class EventRecord {
 
   public enum PersistentType {
     INIT,
-    JOB_STATUS_UPDATE_RUNNING,
-    JOB_STATUS_UPDATE_COMPLETED
+    JOB_STATUS_UPDATE,
+    JOB_STATUS_UPDATE_UNLOCKING
   }
 
   private UUID groupId;

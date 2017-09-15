@@ -427,3 +427,12 @@ CREATE TABLE intermediary_files (
 --changeset bunny:1487849040814-68 dbms:postgresql
 ALTER TABLE event ADD COLUMN message text;
 --rollback ALTER TABLE event drop column message;
+
+--changeset bunny:1487849040814-69 dbms:postgresql
+DROP TYPE persistent_event_type;
+CREATE TYPE persistent_event_type AS ENUM (
+    'INIT',
+    'JOB_STATUS_UPDATE',
+    'JOB_STATUS_UPDATE_UNLOCKING'
+);
+--rollback DROP TYPE persistent_event_type;

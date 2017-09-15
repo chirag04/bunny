@@ -176,14 +176,11 @@ public class JobStatusEvent implements Event {
   @Override
   public EventRecord.PersistentType getPersistentType() {
     switch (state) {
-    case RUNNING:
-      return EventRecord.PersistentType.JOB_STATUS_UPDATE_RUNNING;
     case COMPLETED:
-      return EventRecord.PersistentType.JOB_STATUS_UPDATE_COMPLETED;
+      return EventRecord.PersistentType.JOB_STATUS_UPDATE_UNLOCKING;
     default:
-      break;
+      return EventRecord.PersistentType.JOB_STATUS_UPDATE;
     }
-    return null;
   }
 
 }
