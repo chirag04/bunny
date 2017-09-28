@@ -45,6 +45,7 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
       job.getApp().setCwlVersion(parentJob.getApp().getCwlVersion());
     }
     processElements(null, job);
+    processHints(parentJob, job);
 
     if (job.getApp().isWorkflow()) {
       SBWorkflow workflow = (SBWorkflow) job.getApp();
@@ -52,7 +53,6 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
         SBJob stepJob = step.getJob();
         String stepId = job.getId() + SBSchemaHelper.PORT_ID_SEPARATOR + SBSchemaHelper.normalizeId(step.getId());
         stepJob.setId(stepId);
-        processHints(job, stepJob);
         processElements(job, stepJob);
         process(job, stepJob);
       }
