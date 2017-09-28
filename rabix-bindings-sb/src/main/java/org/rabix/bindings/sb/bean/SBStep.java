@@ -43,7 +43,6 @@ public class SBStep {
   @JsonIgnore
   private SBJob job;
   
-
   @JsonProperty("hints")
   private List<SBResource> hints = new ArrayList<>();
   @JsonProperty("requirements")
@@ -142,6 +141,10 @@ public class SBStep {
     return hints;
   }
 
+  public void setHints(List<SBResource> hints) {
+    this.hints = hints;
+  }
+  
   @Override
   public int hashCode() {
     final int prime = 31;

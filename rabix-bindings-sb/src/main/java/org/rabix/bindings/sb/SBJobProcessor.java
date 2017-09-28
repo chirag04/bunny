@@ -2,7 +2,6 @@ package org.rabix.bindings.sb;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -74,8 +73,7 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
       }
     });
     
-    stepJob.getHints().clear();
-    stepJob.getHints().addAll(collect.values());
+    stepJob.setHints(new ArrayList<>(collect.values()));
     
     appHints.stream().forEach(hint->{
       if(!collect.containsKey(hint.getType())){
@@ -83,8 +81,7 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
       }
     });
 
-    stepJob.getApp().getHints().clear();
-    stepJob.getApp().getHints().addAll(collect.values());
+    stepJob.getApp().setHints(new ArrayList<>(collect.values()));
   }
 
   /**
