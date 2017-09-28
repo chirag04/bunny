@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -44,36 +45,45 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
     if(job.getApp().getCwlVersion() == null && parentJob != null) {
       job.getApp().setCwlVersion(parentJob.getApp().getCwlVersion());
     }
-    processElements(null, job);
+    processElements(parentJob, job);
     
-    if(parentJob!=null){
-      processHints(parentJob, job);
-    }
-
     if (job.getApp().isWorkflow()) {
       SBWorkflow workflow = (SBWorkflow) job.getApp();
       for (SBStep step : workflow.getSteps()) {
         SBJob stepJob = step.getJob();
         String stepId = job.getId() + SBSchemaHelper.PORT_ID_SEPARATOR + SBSchemaHelper.normalizeId(step.getId());
         stepJob.setId(stepId);
-        processElements(job, stepJob);
+        processHints(workflow, step);
         process(job, stepJob);
       }
     }
     return job;
   }
   
-  private void processHints(SBJob job, SBJob stepJob) {
-    List<SBResource> hints = new ArrayList<>();
-    hints.addAll(stepJob.getApp().getHints());
-    List<String> types = hints.stream().map(h->h.getType()).collect(Collectors.toList());
-    for(SBResource resource: job.getApp().getHints()){
-      if(!types.contains(resource.getType())){
-        hints.add(resource);
+  private void processHints(SBWorkflow job, SBStep stepJob) {
+    List<SBResource> parentHints = job.getHints();
+    List<SBResource> stepHints = stepJob.getHints();
+    List<SBResource> appHints = stepJob.getApp().getHints();
+    
+    Map<String, SBResource> collect = parentHints.stream().collect(Collectors.toMap(SBResource::getType, Function.identity()));
+
+    stepHints.stream().forEach(hint->{
+      if(!collect.containsKey(hint.getType())){
+        collect.put(hint.getType(), hint);
       }
-    }
+    });
+    
+    stepJob.getHints().clear();
+    stepJob.getHints().addAll(collect.values());
+    
+    appHints.stream().forEach(hint->{
+      if(!collect.containsKey(hint.getType())){
+        collect.put(hint.getType(), hint);
+      }
+    });
+
     stepJob.getApp().getHints().clear();
-    stepJob.getApp().getHints().addAll(hints); 
+    stepJob.getApp().getHints().addAll(collect.values());
   }
 
   /**
