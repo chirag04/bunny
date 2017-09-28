@@ -2,6 +2,7 @@ package org.rabix.bindings.sb;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -61,12 +62,12 @@ public class SBJobProcessor implements BeanProcessor<SBJob> {
   }
   
   private void processHints(SBWorkflow job, SBStep stepJob) {
-    List<SBResource> parentHints = job.getHints();
-    List<SBResource> stepHints = stepJob.getHints();
-    List<SBResource> appHints = stepJob.getApp().getHints();
+    List<SBResource> parentHints = job.getHints() == null ? new ArrayList<>() : job.getHints();
+    List<SBResource> stepHints = stepJob.getHints() == null ? new ArrayList<>() : stepJob.getHints();
+    List<SBResource> appHints = stepJob.getApp().getHints() == null ? new ArrayList<>() : stepJob.getApp().getHints();
     
     Map<String, SBResource> collect = parentHints.stream().collect(Collectors.toMap(SBResource::getType, Function.identity()));
-
+    
     stepHints.stream().forEach(hint->{
       if(!collect.containsKey(hint.getType())){
         collect.put(hint.getType(), hint);
