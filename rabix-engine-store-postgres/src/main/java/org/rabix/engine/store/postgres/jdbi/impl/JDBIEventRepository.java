@@ -20,7 +20,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 public interface JDBIEventRepository extends EventRepository {
 
   @Override
-  @SqlUpdate("insert into event (id,event,status) values (:id,:event::jsonb,:status::event_status)")
+  @SqlUpdate("insert into event (id,event,status) values (:id,:event,:status::event_status)")
   void insert(@BindEvent EventRecord eventRecord);
   
 
@@ -35,7 +35,7 @@ public interface JDBIEventRepository extends EventRepository {
   public static class EventMapper implements ResultSetMapper<EventRecord> {
     public EventRecord map(int index, ResultSet r, StatementContext ctx) throws SQLException {
       EventRecord.Status status = EventRecord.Status.valueOf(r.getString("status"));
-      Map<String, ?> event = JSONHelper.readMap(r.getString("event"));
+      Map<String, ?> event = JSONHelper.readMap(new String(r.getBytes("event")));
       return new EventRecord(UUID.fromString((String) event.get("eventGroupId")), status, event);
     }
   }
@@ -49,7 +49,7 @@ public interface JDBIEventRepository extends EventRepository {
         return new Binder<JDBIEventRepository.BindEvent, EventRecord>() {
           public void bind(SQLStatement<?> q, JDBIEventRepository.BindEvent bind, EventRecord event) {
             q.bind("id", event.getGroupId());
-            q.bind("event", JSONHelper.writeObject(event.getEvent()));
+            q.bind("event", JSONHelper.writeObject(event.getEvent()).getBytes());
             q.bind("status", event.getStatus().toString());
           }
         };

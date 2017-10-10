@@ -14,8 +14,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "$type")
 @JsonSubTypes({ @Type(value = FileValue.class, name = "File"),
@@ -48,9 +46,6 @@ public class FileValue implements Serializable {
   protected String nameroot;
   @JsonProperty("nameext")
   protected String nameext;
-  
-  @JsonSerialize(using=ContentSerializer.class)
-  @JsonDeserialize(using=ContentDeserializer.class)
   @JsonProperty("contents")
   protected String contents;
   @JsonProperty("format")

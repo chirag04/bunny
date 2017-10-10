@@ -86,14 +86,14 @@ public abstract class JDBIVariableRecordRepository extends VariableRecordReposit
           public void bind(SQLStatement<?> q, BindVariableRecord bind, VariableRecord variableRecord) {
             q.bind("job_id", variableRecord.getJobId());
             
-            try {
-              PGobject data = new PGobject();
-              data.setType("jsonb");
-              data.setValue(JSONHelper.writeObject(variableRecord.getValue()));
-              q.bind("value", data);
-            } catch (SQLException ex) {
-              throw new IllegalStateException("Error Binding value", ex);
-            }
+//            try {
+//              PGobject data = new PGobject();
+//              data.setType("jsonb");
+//              data.setValue(JSONHelper.writeObject(variableRecord.getValue()));
+              q.bind("value", JSONHelper.writeObject(variableRecord.getValue()).getBytes());
+//            } catch (SQLException ex) {
+//              throw new IllegalStateException("Error Binding value", ex);
+//            }
             
             try {
               PGobject data = new PGobject();
@@ -123,7 +123,7 @@ public abstract class JDBIVariableRecordRepository extends VariableRecordReposit
   public static class VariableRecordMapper implements ResultSetMapper<VariableRecord> {
     public VariableRecord map(int index, ResultSet resultSet, StatementContext ctx) throws SQLException {
       String jobId = resultSet.getString("job_id");
-      String value = resultSet.getString("value");
+      String value = new String(resultSet.getBytes("value"));
       String transform = resultSet.getString("transform");
       String portId = resultSet.getString("port_id");
       String type = resultSet.getString("type");
