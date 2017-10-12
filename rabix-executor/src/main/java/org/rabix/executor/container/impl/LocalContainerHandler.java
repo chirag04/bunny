@@ -100,16 +100,20 @@ public class LocalContainerHandler implements ContainerHandler {
       processBuilder.directory(workingDir);
 
       boolean runInShell = commandLineString.startsWith("/bin/bash") || commandLineString.startsWith("/bin/sh");
-      if (runInShell || !commandLine.isRunInShell()) {
-        List<String> parts = commandLine.getParts();
-        processBuilder.command(parts);
 
+      List<String> cmd = new ArrayList<>();
+      if (runInShell || commandLine.isRunInShell()) {
+        cmd.add("/bin/sh");
+        cmd.add("-c");
+        cmd.add(commandLine.build());
+      } else {
+        cmd.addAll(commandLine.getParts());
         processBuilder.redirectInput(redirect(workingDir, commandLine.getStandardIn(), false));
         processBuilder.redirectOutput(redirect(workingDir, commandLine.getStandardOut(), true));
         processBuilder.redirectError(redirect(workingDir, commandLine.getStandardError(), true));
-      } else {
-        processBuilder.command("/bin/sh", "-c", commandLineString);
       }
+      processBuilder.command(cmd);
+
 
       VerboseLogger.log(String.format("Running command line: %s", commandLineString));
       processFuture = executorService.submit(new Callable<Integer>() {
