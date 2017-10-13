@@ -19,9 +19,9 @@ import org.rabix.bindings.model.FileValue;
 import org.rabix.bindings.model.LinkMerge;
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 import org.rabix.common.helper.JSONHelper;
+import org.rabix.engine.store.cache.Cachable;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.VariableRecord;
-import org.rabix.engine.store.cache.Cachable;
 import org.rabix.engine.store.postgres.jdbi.impl.JDBIVariableRecordRepository.VariableRecordMapper;
 import org.rabix.engine.store.repository.VariableRecordRepository;
 import org.skife.jdbi.v2.SQLStatement;
@@ -85,16 +85,7 @@ public abstract class JDBIVariableRecordRepository extends VariableRecordReposit
         return new Binder<BindVariableRecord, VariableRecord>() {
           public void bind(SQLStatement<?> q, BindVariableRecord bind, VariableRecord variableRecord) {
             q.bind("job_id", variableRecord.getJobId());
-            
-//            try {
-//              PGobject data = new PGobject();
-//              data.setType("jsonb");
-//              data.setValue(JSONHelper.writeObject(variableRecord.getValue()));
-              q.bind("value", JSONHelper.writeObject(variableRecord.getValue()).getBytes());
-//            } catch (SQLException ex) {
-//              throw new IllegalStateException("Error Binding value", ex);
-//            }
-            
+            q.bind("value", JSONHelper.writeObject(variableRecord.getValue()).getBytes());
             try {
               PGobject data = new PGobject();
               data.setType("jsonb");

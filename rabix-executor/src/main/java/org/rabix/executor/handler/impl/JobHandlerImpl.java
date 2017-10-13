@@ -3,7 +3,12 @@ package org.rabix.executor.handler.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -91,8 +96,6 @@ public class JobHandlerImpl implements JobHandler {
   private final FilePermissionService filePermissionService;
   private final CacheService cacheService;
 
-  private boolean setPermissions;
-
   @Inject
   public JobHandlerImpl(
       @Assisted Job job, @Assisted EngineStub<?, ?, ?> engineStub, 
@@ -118,7 +121,6 @@ public class JobHandlerImpl implements JobHandler {
     this.outputFileMapper = outputFileMapper;
     this.enableHash = fileConfiguration.calculateFileChecksum();
     this.hashAlgorithm = fileConfiguration.checksumAlgorithm();
-    this.setPermissions = configuration.getBoolean("executor.set_permissions", false);
   }
 
   @Override
@@ -353,19 +355,24 @@ public class JobHandlerImpl implements JobHandler {
       }
       
       String standardErrorLog = bindings.getStandardErrorLog(job);
-      if (standardErrorLog == null) {
-        standardErrorLog = DEFAULT_ERROR_FILE;
-      }
-      containerHandler.dumpContainerLogs(new File(workingDir, standardErrorLog));
-
+      
       if (!isSuccessful()) {
         uploadOutputFiles(job, bindings);
         return job;
       }
-      if (setPermissions) {
-        filePermissionService.execute(job);
+      
+      filePermissionService.execute(job);
+
+      if (standardErrorLog != null) {
+        containerHandler.dumpContainerLogs(new File(workingDir, standardErrorLog));
       }
+      
       job = bindings.postprocess(job, workingDir, enableHash? hashAlgorithm : null, null);
+      
+      if (standardErrorLog == null) {
+        containerHandler.dumpContainerLogs(new File(workingDir, DEFAULT_ERROR_FILE));
+      }
+      
       containerHandler.dumpCommandLine();
       
       statusCallback.onOutputFilesUploadStarted(job);
