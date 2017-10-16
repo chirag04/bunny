@@ -35,12 +35,27 @@ public class SBInputSecondaryFilesProcessor implements SBPortProcessorCallback {
     return SBSchemaHelper.isFileFromValue(value) || FileValue.isFileValue(value) ;
   }
   
+  public static <T> Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor)
+  {
+      Map<Object, Boolean> map = new ConcurrentHashMap<>();
+      return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+  }
+  
   @Override
   @SuppressWarnings("unchecked")
   public SBPortProcessorResult process(Object value, String id, Object schema, Object binding, ApplicationPort parentPort) throws Exception {
     if (isFile(value) && parentPort instanceof SBInputPort) {
       if (!CollectionUtils.isEmpty(SBFileValueHelper.getSecondaryFiles(value))) {
-        return new SBPortProcessorResult(value, false); 
+        Map<String, Object> clonedValue = (Map<String, Object>) CloneHelper.deepCopy(value);
+        List<Map<String, Object>> inputSecondaryFiles = SBProcessor.getSecondaryFiles(job, hashAlgorithm, clonedValue, SBFileValueHelper.getPath(clonedValue), binding);
+        if(inputSecondaryFiles == null) {
+          return new SBPortProcessorResult(value, false);
+        }
+        else {
+          List<Map<String, Object>> result = Stream.concat(SBFileValueHelper.getSecondaryFiles(clonedValue).stream(), inputSecondaryFiles.stream()).filter(distinctByKey(p -> SBFileValueHelper.getPath(p))).collect(Collectors.toList());
+          SBFileValueHelper.setSecondaryFiles(result, clonedValue);
+          return new SBPortProcessorResult(clonedValue, true);
+        }
       }
       
       List<Map<String, Object>> secondaryFiles = SBFileValueHelper.getSecondaryFiles(binding);
