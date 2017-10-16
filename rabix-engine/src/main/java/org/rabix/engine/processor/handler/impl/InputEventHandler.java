@@ -20,6 +20,8 @@ import org.rabix.engine.service.VariableRecordService;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.LinkRecord;
 import org.rabix.engine.store.model.VariableRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
@@ -35,6 +37,7 @@ public class InputEventHandler implements EventHandler<InputUpdateEvent> {
   
   private final ScatterHandler scatterHelper;
   private final EventProcessor eventProcessor;
+  private Logger logger = LoggerFactory.getLogger(InputEventHandler.class);
 
   @Inject
   public InputEventHandler(EventProcessor eventProcessor, ScatterHandler scatterHelper, JobRecordService jobService,
@@ -50,6 +53,7 @@ public class InputEventHandler implements EventHandler<InputUpdateEvent> {
   
   @Override
   public void handle(InputUpdateEvent event) throws EventHandlerException {
+    logger.info(event.toString());
     JobRecord job = jobService.find(event.getJobId(), event.getContextId());
     VariableRecord variable = variableService.find(event.getJobId(), event.getPortId(), LinkPortType.INPUT, event.getContextId());
 

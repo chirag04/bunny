@@ -27,6 +27,8 @@ import org.rabix.engine.store.model.LinkRecord;
 import org.rabix.engine.store.model.VariableRecord;
 import org.rabix.engine.store.model.scatter.ScatterStrategy;
 import org.rabix.engine.store.model.scatter.ScatterStrategy.JobPortPair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
@@ -48,7 +50,10 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
   @Inject
   private JobHelper jobHelper;
   
+  private Logger logger = LoggerFactory.getLogger(OutputEventHandler.class);
+  
   public void handle(final OutputUpdateEvent event) throws EventHandlerException {
+    logger.info(event.toString());
     JobRecord sourceJob = jobRecordService.find(event.getJobId(), event.getContextId());
     
     if (sourceJob.isScatterWrapper()) {
