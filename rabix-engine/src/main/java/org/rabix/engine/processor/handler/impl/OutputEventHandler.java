@@ -59,13 +59,13 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
     
     VariableRecord sourceVariable = variableService.find(event.getJobId(), event.getPortId(), LinkPortType.OUTPUT, event.getContextId());
     jobRecordService.decrementPortCounter(sourceJob, event.getPortId(), LinkPortType.OUTPUT);
-    variableService.addValue(sourceVariable, event.getValue(), event.getPosition(), isScatterWrapper && !sourceJob.getScatterStrategy().isEmptyListDetected());
+    variableService.addValue(sourceVariable, event.getValue(), event.getPosition(), sourceJob.isScatterWrapper());
     variableService.update(sourceVariable); // TODO wha?
     jobRecordService.update(sourceJob);
     
     if (sourceJob.isCompleted()) {
       if(sourceJob.getOutputCounter(sourceVariable.getPortId()) != null) {
-        if (sourceJob.isRoot()) {
+        if (sourceJob.isContainer()) {
           Job rootJob = createJob(sourceJob, JobHelper.transformStatus(sourceJob.getState()));
             eventProcessor.addToQueue(
                 new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobRecord.JobState.COMPLETED, rootJob.getOutputs(), event.getEventGroupId(), InternalSchemaHelper.ROOT_NAME));
