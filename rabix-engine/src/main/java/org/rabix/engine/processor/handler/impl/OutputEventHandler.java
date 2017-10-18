@@ -10,12 +10,14 @@ import org.rabix.common.functional.FunctionalHelper.Recursive;
 import org.rabix.common.helper.InternalSchemaHelper;
 import org.rabix.engine.JobHelper;
 import org.rabix.engine.event.Event;
+import org.rabix.engine.event.Event.EventType;
 import org.rabix.engine.event.impl.InputUpdateEvent;
 import org.rabix.engine.event.impl.JobStatusEvent;
 import org.rabix.engine.event.impl.OutputUpdateEvent;
 import org.rabix.engine.processor.EventProcessor;
 import org.rabix.engine.processor.handler.EventHandler;
 import org.rabix.engine.processor.handler.EventHandlerException;
+import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.JobRecordService;
 import org.rabix.engine.service.JobService;
 import org.rabix.engine.service.LinkRecordService;
@@ -49,11 +51,14 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
   private JobService jobService;
   @Inject
   private JobHelper jobHelper;
+  @Inject
+  private IntermediaryFilesService intermediaryFilesService;
   
   private Logger logger = LoggerFactory.getLogger(OutputEventHandler.class);
   
   public void handle(final OutputUpdateEvent event) throws EventHandlerException {
     logger.info(event.toString());
+//    intermediaryFilesService.handleOutputSent(event.getContextId(), event.getJobId(), 1, event.getValue());
     JobRecord sourceJob = jobRecordService.find(event.getJobId(), event.getContextId());
     
     if (sourceJob.isScatterWrapper()) {
@@ -104,10 +109,10 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
         linkService.findBySourceAndSourceType(sourceVariable.getJobId(), sourceVariable.getPortId(), LinkPortType.OUTPUT, event.getContextId());
     
     for (LinkRecord link : links) {
-      Object tempValue = value;
-      Event newEvent = createChildEvent(event, sourceJob, numberOfScattered, link, tempValue);
-      if (newEvent != null)
+      Event newEvent = createChildEvent(event, sourceJob, numberOfScattered, link, value);
+      if (newEvent != null) {
         eventProcessor.send(newEvent);
+      }
     }
     
     if (sourceJob.isCompleted() && (sourceJob.isScatterWrapper() || sourceJob.isContainer())) {
