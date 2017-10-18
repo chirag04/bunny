@@ -16,8 +16,6 @@ public interface IntermediaryFilesService {
 
   void handleUnusedFiles(Job job);
 
-  void handleContainerReady(Job containerJob, boolean keepInputFiles);
-
   void handleJobCompleted(Job job);
 
   void handleJobFailed(Job job, Job rootJob, boolean keepInputFiles);
@@ -26,6 +24,6 @@ public interface IntermediaryFilesService {
   
   void handleInputSent(UUID rootId, Object input);
 
-  void handleOutputSent(UUID rootId, String jobId, int count, Object input);   
+  void handleDanglingOutput(UUID rootId, Object input);   
 }
 

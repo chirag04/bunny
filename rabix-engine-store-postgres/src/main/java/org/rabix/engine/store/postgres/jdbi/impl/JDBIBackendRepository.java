@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.rabix.common.helper.JSONHelper;
+import org.rabix.common.json.BeanSerializer;
 import org.rabix.engine.store.model.BackendRecord;
 import org.rabix.engine.store.postgres.jdbi.bindings.BindJson;
 import org.rabix.engine.store.postgres.jdbi.impl.JDBIBackendRepository.BackendMapper;
@@ -90,7 +91,7 @@ public interface JDBIBackendRepository extends BackendRepository {
             q.bind("type", backend.getType().toString());
             q.bind("heartbeat_info", Timestamp.from(backend.getHeartbeatInfo()));
             q.bind("status", backend.getStatus().toString());
-            q.bind("configuration", JSONHelper.writeObject(backend.getBackendConfig()));
+            q.bind("configuration", BeanSerializer.serializePartial(backend));
           }
         };
       }
