@@ -80,7 +80,7 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
         }
       }
     }
-    jobFailed(job.getRootId(), rootInputs);
+    jobFailed(job.getRootId(), rootInputs); 
     handleUnusedFiles(job);
   }
   
@@ -108,9 +108,10 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
   @Override
   public void extractPathsFromFileValue(Set<String> paths, FileValue file) {
     paths.add(file.getPath());
-    for(FileValue f: file.getSecondaryFiles()) {
-      extractPathsFromFileValue(paths, f);
-    }
+    if(file.getSecondaryFiles()!=null)
+      for(FileValue f: file.getSecondaryFiles()) {
+        extractPathsFromFileValue(paths, f);
+      }
   }
   
   @Override
