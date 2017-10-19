@@ -325,7 +325,7 @@ public class CWLDocumentResolver {
         ParentChild parentChild = findReferencedNode(referenceDocumentRoot, referencePath);
 
         Path parentPath = file.getParentFile() != null ? file.getParentFile().toPath() : Paths.get(".");
-        JsonNode resolvedNode = traverse(appUrl, root, parentPath.resolve(referencePath).toFile(), parentChild.parent, parentChild.child, false);
+        JsonNode resolvedNode = traverse(appUrl, root, parentPath.resolve(referencePath).normalize().toFile(), parentChild.parent, parentChild.child, false);
         if (resolvedNode == null) {
           return null;
         }

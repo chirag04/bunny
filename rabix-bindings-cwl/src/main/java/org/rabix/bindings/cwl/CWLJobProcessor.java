@@ -88,6 +88,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
 
     Path appFolder = Paths.get(appLocation).getParent() != null ?
         Paths.get(appLocation).getParent().toAbsolutePath() : Paths.get(".").toAbsolutePath();
+    appFolder = appFolder.normalize();
     if (value instanceof CWLStepInputs) {
       value = ((CWLStepInputs) value).getDefaultValue();
     }
