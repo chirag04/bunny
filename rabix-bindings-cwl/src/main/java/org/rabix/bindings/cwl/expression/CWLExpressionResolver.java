@@ -207,7 +207,7 @@ public class CWLExpressionResolver {
 
     private int skipStringycontent(int start) {
       char c = chars[start];
-      if (c != '\'' && c != '\"' && c != '/')
+      if (isEscaped(start))
         return start;
       if (c == '/') {
         if (chars[start + 1] == '/')
@@ -216,7 +216,9 @@ public class CWLExpressionResolver {
           return skipFullComments(start);
         return start;
       }
-      return skipUntil(start, c);
+      if(c == '\'' && c == '\"')
+        return skipUntil(start, c);
+      return start;
     }
 
     private int skipFullComments(int start) {
