@@ -205,14 +205,12 @@ public class JobStatusEventHandler implements EventHandler<JobStatusEvent> {
           }
         }
       }
-        if (!jobRecord.isScatterWrapper()) {
           try {
             jobService.handleJobCompleted(jobHelper.createJob(jobRecord, JobStatus.COMPLETED, event.getResult()));
           } catch (BindingException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
           }
-        }
       break;
     case ABORTED:
       Set<JobRecord.JobState> jobRecordStatuses = new HashSet<>();

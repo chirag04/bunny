@@ -56,7 +56,7 @@ public class InputEventHandler implements EventHandler<InputUpdateEvent> {
     VariableRecord variable = variableService.find(event.getJobId(), event.getPortId(), LinkPortType.INPUT, event.getContextId());
 
     DAGNode node = dagNodeService.get(InternalSchemaHelper.normalizeId(job.getId()), event.getContextId(), job.getDagHash());
-    if(!job.isScatterWrapper())
+//    if(!job.isScatterWrapper())
       intermediaryFilesService.handleInputSent(event.getContextId(), event.getValue());
 
     if (event.isLookAhead()) {
