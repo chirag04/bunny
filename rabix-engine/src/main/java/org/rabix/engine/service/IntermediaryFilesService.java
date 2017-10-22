@@ -24,6 +24,8 @@ public interface IntermediaryFilesService {
   
   void handleInputSent(UUID rootId, Object input);
 
-  void handleDanglingOutput(UUID rootId, Object input);   
+  void handleDanglingOutput(UUID rootId, Object input);
+
+  void handleInputSent(UUID rootId, Object input, int count);   
 }
 

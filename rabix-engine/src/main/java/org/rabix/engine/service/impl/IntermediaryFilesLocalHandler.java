@@ -29,7 +29,7 @@ public class IntermediaryFilesLocalHandler implements IntermediaryFilesHandler {
       Path path = Paths.get(p);
       try {
         logger.info("Deleting file={}", path);
-        Files.delete(path);
+        Files.move(path, path.resolveSibling(path.getFileName().toString()+"_deleted"));
       } catch (NoSuchFileException e1) {
         logger.error("Failed to deleteGroup file={} No such file", path, e1);
         System.err.format("%s: no such" + " file or directory%n", path);

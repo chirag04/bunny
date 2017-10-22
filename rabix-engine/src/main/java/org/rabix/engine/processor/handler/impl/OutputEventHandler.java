@@ -113,13 +113,9 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
         eventProcessor.send(newEvent);
       }
     }
-    if(links.isEmpty()){
-      intermediaryFilesService.handleDanglingOutput(event.getContextId(), event.getValue());
-    }
     
-    if (sourceJob.isCompleted() && (sourceJob.isScatterWrapper() || sourceJob.isContainer())) {
-      eventProcessor.addToQueue(new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobState.COMPLETED, createJob(sourceJob, JobStatus.COMPLETED).getOutputs(),
-          event.getEventGroupId(), sourceJob.getId()));
+    if (links.isEmpty()) {
+      intermediaryFilesService.handleDanglingOutput(event.getContextId(), event.getValue());
     }
   }
 

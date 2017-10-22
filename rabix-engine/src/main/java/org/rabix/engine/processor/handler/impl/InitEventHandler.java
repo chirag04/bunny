@@ -46,6 +46,9 @@ public class InitEventHandler implements EventHandler<InitEvent> {
   private VariableRecordService variableRecordService;
   @Inject
   private JobStatsRecordService jobStatsRecordService;
+
+  @Inject
+  private IntermediaryFilesService filesService;
   
   public void handle(final InitEvent event) throws EventHandlerException {
     ContextRecord context = new ContextRecord(event.getRootId(), event.getConfig(), ContextStatus.RUNNING);

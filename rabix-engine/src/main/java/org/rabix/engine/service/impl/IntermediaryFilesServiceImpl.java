@@ -140,9 +140,14 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
 
   @Override
   public void handleInputSent(UUID rootId, Object input) {
+    handleInputSent(rootId, input, 1);
+  }
+  
+  @Override
+  public void handleInputSent(UUID rootId, Object input, int count) {
     Set<FileValue> files = new HashSet<FileValue>(FileValueHelper.getFilesFromValue(input));
     for(FileValue file: files){
-      addOrIncrement(rootId, file, 1);
+      addOrIncrement(rootId, file, count);
     }
   }
 
