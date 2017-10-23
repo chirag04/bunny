@@ -114,9 +114,9 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
       }
     }
     
-    if (links.isEmpty()) {
-      intermediaryFilesService.handleDanglingOutput(event.getContextId(), event.getValue());
-    }
+//    if (links.isEmpty()) {
+//      intermediaryFilesService.handleDanglingOutput(event.getContextId(), event.getValue());
+//    }
   }
 
   private Event createChildEvent(final OutputUpdateEvent event, JobRecord sourceJob, Integer numberOfScattered, LinkRecord link, Object tempValue) {
