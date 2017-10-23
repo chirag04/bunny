@@ -90,7 +90,6 @@ public class CWLProcessor implements ProtocolProcessor {
     CWLPortProcessorHelper portProcessorHelper = new CWLPortProcessorHelper(cwlJob);
     try {
       Map<String, Object> inputs = cwlJob.getInputs();
-      inputs = inputs.entrySet().stream().filter(e->e.getValue()!=null).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
       inputs = portProcessorHelper.createFileLiteralFiles(inputs, workingDir);
       inputs = portProcessorHelper.setPathsToInputs(inputs);
       inputs = portProcessorHelper.setFileProperties(inputs);
