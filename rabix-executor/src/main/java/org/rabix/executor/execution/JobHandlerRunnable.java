@@ -48,11 +48,11 @@ public class JobHandlerRunnable implements Runnable {
           Thread.sleep(sleepTime);
           continue;
         }
-        logger.debug("Command {} found. Start execution.", command);
+//        logger.debug("Command {} found. Start execution.", command);
 
         Repeat repeat = command.getRepeat();
         if (repeat != null) {
-          logger.debug("Command {} is repeatable. Delay and put it back to queue.", command);
+//          logger.debug("Command {} is repeatable. Delay and put it back to queue.", command);
           Thread.sleep(repeat.delay);
           addCommand(command);
         }
