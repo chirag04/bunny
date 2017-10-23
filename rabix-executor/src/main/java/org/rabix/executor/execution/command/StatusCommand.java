@@ -36,16 +36,16 @@ public class StatusCommand extends JobHandlerCommand {
   @Override
   public Result run(JobData jobData, JobHandler jobHandler, UUID rootId) {
     UUID jobId = jobData.getJob().getId();
-    logger.debug("Check status for {} command line tool.", jobId);
+//    logger.debug("Check status for {} command line tool.", jobId);
 
     if (!JobDataStatus.STARTED.equals(jobData.getStatus())) {
-      logger.info("Command line tool {} is not started yet.", jobId);
+//      logger.info("Command line tool {} is not started yet.", jobId);
       return new Result(false);
     }
     try {
       Job job = jobData.getJob();
       if (jobHandler.isRunning()) {
-        logger.info("Command line tool {} for context {} is still running.", job.getId(), job.getRootId());
+//        logger.info("Command line tool {} for context {} is still running.", job.getId(), job.getRootId());
         return new Result(false);
       }
       
