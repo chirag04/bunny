@@ -172,12 +172,13 @@ public class JobStatusEventHandler implements EventHandler<JobStatusEvent> {
         jobStatsRecord.increaseCompleted();
         jobStatsRecordService.update(jobStatsRecord);
       }
-
-      for (PortCounter portCounter : jobRecord.getOutputCounters()) {
-        Object output = event.getResult().get(portCounter.getPort());
-        eventProcessor.send(new OutputUpdateEvent(jobRecord.getRootId(), jobRecord.getId(), portCounter.getPort(), output,
-            jobRecord.getNumberOfGlobalOutputs(), 1, event.getEventGroupId(), event.getProducedByNode()));
-      }
+        if (!jobRecord.isContainer() && !jobRecord.isScatterWrapper()) {
+          for (PortCounter portCounter : jobRecord.getOutputCounters()) {
+            Object output = event.getResult().get(portCounter.getPort());
+            eventProcessor.send(new OutputUpdateEvent(jobRecord.getRootId(), jobRecord.getId(), portCounter.getPort(), output,
+                jobRecord.getNumberOfGlobalOutputs(), 1, event.getEventGroupId(), event.getProducedByNode()));
+          }
+        }
       if (jobRecord.isRoot()) {
         eventProcessor.send(new ContextStatusEvent(event.getContextId(), ContextStatus.COMPLETED));
         try {
@@ -201,12 +202,13 @@ public class JobStatusEventHandler implements EventHandler<JobStatusEvent> {
             jobService.handleJobRootPartiallyCompleted(jobRecord.getRootId(), outs, jobRecord.getId());
           }
         }
+        try {
+          jobService.handleJobCompleted(jobHelper.createJob(jobRecord, JobStatus.COMPLETED, event.getResult()));
+        } catch (BindingException e1) {
+          logger.error("Couldn't create job", e1);
+        }
       }
-      try {
-        jobService.handleJobCompleted(jobHelper.createJob(jobRecord, JobStatus.COMPLETED, event.getResult()));
-      } catch (BindingException e1) {
-        logger.error("Couldn't create job", e1);
-      }
+
       break;
     case ABORTED:
       Set<JobRecord.JobState> jobRecordStatuses = new HashSet<>();
