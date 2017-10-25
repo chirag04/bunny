@@ -59,7 +59,6 @@ import org.rabix.engine.service.BootstrapService;
 import org.rabix.engine.service.BootstrapServiceException;
 import org.rabix.engine.service.ContextRecordService;
 import org.rabix.engine.service.IntermediaryFilesHandler;
-import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.JobService;
 import org.rabix.engine.service.JobServiceException;
 import org.rabix.engine.service.SchedulerService;
@@ -69,8 +68,7 @@ import org.rabix.engine.service.SchedulerService.SchedulerMessageSender;
 import org.rabix.engine.service.impl.BackendServiceImpl;
 import org.rabix.engine.service.impl.BootstrapServiceImpl;
 import org.rabix.engine.service.impl.IntermediaryFilesLocalHandler;
-import org.rabix.engine.service.impl.IntermediaryFilesServiceImpl;
-import org.rabix.engine.service.impl.JobReceiverImpl;
+import org.rabix.engine.service.impl.JobReceiverFactoryImpl;
 import org.rabix.engine.service.impl.JobServiceImpl;
 import org.rabix.engine.service.impl.NoOpIntermediaryFilesServiceHandler;
 import org.rabix.engine.service.impl.SchedulerServiceImpl;
@@ -79,7 +77,7 @@ import org.rabix.engine.status.impl.DefaultEngineStatusCallback;
 import org.rabix.engine.store.model.ContextRecord;
 import org.rabix.engine.stub.BackendStubFactory;
 import org.rabix.engine.stub.impl.BackendStubFactoryImpl;
-import org.rabix.transport.mechanism.TransportPlugin.ReceiveCallback;
+import org.rabix.transport.mechanism.TransportPlugin.ReceiverCallbackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -262,7 +260,7 @@ public class BackendCommandLine {
               bind(WorkerStatusCallback.class).to(NoOpWorkerStatusCallback.class).in(Scopes.SINGLETON);
 
               bind(BackendStubFactory.class).to(BackendStubFactoryImpl.class).in(Scopes.SINGLETON);
-              bind(new TypeLiteral<ReceiveCallback<Job>>(){}).to(JobReceiverImpl.class).in(Scopes.SINGLETON);
+              bind(new TypeLiteral<ReceiverCallbackFactory<Job>>(){}).to(JobReceiverFactoryImpl.class).in(Scopes.SINGLETON);
               
               Set<Class<BackendModule>> backendModuleClasses = ClasspathScanner.<BackendModule>scanSubclasses(BackendModule.class);
               for (Class<BackendModule> backendModuleClass : backendModuleClasses) {

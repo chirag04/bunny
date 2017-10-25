@@ -34,7 +34,7 @@ import org.rabix.engine.stub.BackendStub;
 import org.rabix.transport.backend.Backend;
 import org.rabix.transport.backend.Backend.BackendStatus;
 import org.rabix.transport.mechanism.TransportPlugin.ErrorCallback;
-import org.rabix.transport.mechanism.TransportPlugin.ReceiveCallback;
+import org.rabix.transport.mechanism.TransportPlugin.ReceiverCallbackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,16 +64,18 @@ public class SchedulerServiceImpl implements SchedulerService, SchedulerMessageC
 
   private final AtomicReference<Set<SchedulerMessage>> messages = new AtomicReference<Set<SchedulerMessage>>(Collections.<SchedulerMessage>emptySet());
 
-  private final ReceiveCallback<Job> jobReceiver;
+  private final ReceiverCallbackFactory<Job> jobReceivers;
 
   private final ErrorCallback errorCallback;
 
   private final SchedulerMessageCreator messageCreator;
   private final SchedulerJobBackendAssigner assigner;
+
+  private int count;
   
   @Inject
   public SchedulerServiceImpl(Configuration configuration, JobService jobService, BackendService backendService,
-      TransactionHelper repositoriesFactory, SchedulerMessageCreator messageCreator, ReceiveCallback<Job> jobReceiver,
+      TransactionHelper repositoriesFactory, SchedulerMessageCreator messageCreator, ReceiverCallbackFactory<Job> jobReceivers,
       BackendRepository backendRepository, SchedulerJobBackendAssigner assigner) {
     this.jobService = jobService;
     this.backendService = backendService;
@@ -81,8 +83,8 @@ public class SchedulerServiceImpl implements SchedulerService, SchedulerMessageC
     this.messageCreator = messageCreator;
     this.assigner = assigner;
     this.heartbeatPeriod = configuration.getLong("cleaner.backend.period", DEFAULT_HEARTBEAT_PERIOD);
-
-    this.jobReceiver = jobReceiver;
+    this.count = configuration.getInt("engine.event_processors.count", 8);
+    this.jobReceivers = jobReceivers;
     this.errorCallback = error -> logger.error("Failed to receive message.", error);
   }
 
@@ -182,7 +184,7 @@ public class SchedulerServiceImpl implements SchedulerService, SchedulerMessageC
           logger.debug("Awakening backend: " + backend.getId());
         }
         backendService.updateHeartbeatInfo(backendStub.getBackend().getId(), Instant.ofEpochMilli(info.getTimestamp()));
-      }, this.jobReceiver, this.errorCallback);
+      }, this.jobReceivers, count, this.errorCallback);
       this.backendStubs.add(backendStub);
     } finally {
       dispatcherLock.unlock();

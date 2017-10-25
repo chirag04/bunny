@@ -6,6 +6,12 @@ public interface TransportPlugin<Q extends TransportQueue> {
 
   <T> void startReceiver(Q sourceQueue, Class<T> clazz, ReceiveCallback<T> receiveCallback, ErrorCallback errorCallback);
   
+  default <T> void startReceivers(Q sourceQueue, Class<T> clazz, ReceiverCallbackFactory<T> receiveCallbacks, int count, ErrorCallback errorCallback){
+    for(int i=0; i<count; i++){
+      startReceiver(sourceQueue, clazz, receiveCallbacks.getReceiver(), errorCallback);
+    }
+  }
+  
   void stopReceiver(Q sourceQueue);
   
   TransportPluginType getType();
@@ -15,11 +21,15 @@ public interface TransportPlugin<Q extends TransportQueue> {
     void handleReceive(T entity) throws TransportPluginException;
   }
   
+  public interface ReceiverCallbackFactory<T> {
+    public ReceiveCallback<T> getReceiver();
+  }
+  
   @FunctionalInterface
   public static interface ErrorCallback {
     void handleError(Exception error);
   }
-  
+    
   public static class ResultPair<T> {
     private boolean success;
     

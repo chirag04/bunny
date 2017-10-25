@@ -8,6 +8,7 @@ import org.rabix.transport.backend.HeartbeatInfo;
 import org.rabix.transport.mechanism.TransportPlugin;
 import org.rabix.transport.mechanism.TransportPlugin.ErrorCallback;
 import org.rabix.transport.mechanism.TransportPlugin.ReceiveCallback;
+import org.rabix.transport.mechanism.TransportPlugin.ReceiverCallbackFactory;
 import org.rabix.transport.mechanism.TransportPluginException;
 import org.rabix.transport.mechanism.TransportQueue;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public abstract class BackendStub<Q extends TransportQueue, B extends Backend, T
     void save(HeartbeatInfo info) throws Exception;
   }
   
-  public void start(HeartbeatCallback heartbeatCallback, ReceiveCallback<Job> receiveCallback, ErrorCallback errorCallback) {
-    transportPlugin.startReceiver(receiveFromBackendQueue, Job.class, receiveCallback, errorCallback);
+  public void start(HeartbeatCallback heartbeatCallback, ReceiverCallbackFactory<Job> receiveCallback, int count, ErrorCallback errorCallback) {
+    transportPlugin.startReceivers(receiveFromBackendQueue, Job.class, receiveCallback, count, errorCallback);
 
     transportPlugin.startReceiver(receiveFromBackendHeartbeatQueue, HeartbeatInfo.class,
         new ReceiveCallback<HeartbeatInfo>() {

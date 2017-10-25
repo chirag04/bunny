@@ -295,7 +295,6 @@ public class JobServiceImpl implements JobService {
   public void handleJobFailed(final Job failedJob){
     logger.warn("Job {}, rootId: {} failed: {}", failedJob.getName(), failedJob.getRootId(), failedJob.getMessage());
     intermediaryFilesService.handleJobFailed(failedJob, jobRepository.get(failedJob.getRootId()));
-    
     try {
       engineStatusCallback.onJobFailed(failedJob);
     } catch (EngineStatusCallbackException e) {

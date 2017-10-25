@@ -14,6 +14,7 @@ import org.rabix.common.helper.JSONHelper;
 import org.rabix.engine.event.Event;
 import org.rabix.engine.event.Event.EventType;
 import org.rabix.engine.event.impl.ContextStatusEvent;
+import org.rabix.engine.event.impl.InitEvent;
 import org.rabix.engine.event.impl.JobStatusEvent;
 import org.rabix.engine.store.model.ContextRecord;
 import org.rabix.engine.store.model.ContextRecord.ContextStatus;
@@ -132,7 +133,7 @@ public class EventProcessorImpl implements EventProcessor {
   }
   
   private boolean checkForReadyJobs(Event event) {
-    return (event instanceof JobStatusEvent && ((JobStatusEvent) event).getState().equals(JobState.COMPLETED));
+    return (event instanceof InitEvent || (event instanceof JobStatusEvent && ((JobStatusEvent) event).getState().equals(JobState.COMPLETED)));
   }
   
   private boolean handle(Event event) throws TransactionException {

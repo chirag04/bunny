@@ -288,5 +288,4 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
     }
 
   }
-
 }
