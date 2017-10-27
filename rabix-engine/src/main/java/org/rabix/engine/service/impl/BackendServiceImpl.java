@@ -17,7 +17,6 @@ import org.rabix.engine.store.model.BackendRecord;
 import org.rabix.engine.store.repository.BackendRepository;
 import org.rabix.engine.store.repository.TransactionHelper;
 import org.rabix.engine.store.repository.TransactionHelper.TransactionException;
-import org.rabix.engine.stub.BackendStub;
 import org.rabix.engine.stub.BackendStubFactory;
 import org.rabix.transport.backend.Backend;
 import org.rabix.transport.backend.Backend.BackendStatus;
@@ -70,6 +69,7 @@ public class BackendServiceImpl implements BackendService {
           injector.injectMembers(backendAPI);
           BackendLocal backendLocal = new BackendLocal(Integer.toString(prefix++));
           create(backendLocal);
+          startBackend(backendLocal);
           backendAPI.start(backendLocal);
         }
       } catch (InstantiationException | IllegalAccessException | BackendServiceException e) {
@@ -95,8 +95,6 @@ public class BackendServiceImpl implements BackendService {
                 BackendRecord.Status.ACTIVE,
                 BackendRecord.Type.valueOf(backend.getType().toString()));
             backendRepository.insert(br);
-            BackendStub<?, ?, ?> backendStub = backendStubFactory.create(backend);
-            scheduler.addBackendStub(backendStub);
             logger.info("Backend {} registered.", populated.getId());
             return backend;
           } catch (BackendServiceException e) {
