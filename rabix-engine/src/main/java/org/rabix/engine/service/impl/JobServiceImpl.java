@@ -107,12 +107,6 @@ public class JobServiceImpl implements JobService {
         @Override
         public Void call() throws Exception {
           if (!job.isRoot()) {
-            UUID backendId = jobRepository.getBackendId(job.getId());
-            if (backendId == null) {
-              logger.warn("Tried to update Job " + job.getId() + " without backend assigned.");
-              return null;
-            }  
-            
             JobStatus dbStatus = jobRepository.getStatus(job.getId());
             JobStateValidator.checkState(JobHelper.transformStatus(dbStatus), JobHelper.transformStatus(job.getStatus()));
           }
