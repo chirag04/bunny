@@ -44,7 +44,6 @@ import org.rabix.engine.service.BackendService;
 import org.rabix.engine.service.BootstrapService;
 import org.rabix.engine.service.BootstrapServiceException;
 import org.rabix.engine.service.IntermediaryFilesHandler;
-import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.JobService;
 import org.rabix.engine.service.SchedulerService;
 import org.rabix.engine.service.SchedulerService.SchedulerJobBackendAssigner;
@@ -52,7 +51,6 @@ import org.rabix.engine.service.SchedulerService.SchedulerMessageCreator;
 import org.rabix.engine.service.SchedulerService.SchedulerMessageSender;
 import org.rabix.engine.service.impl.BackendServiceImpl;
 import org.rabix.engine.service.impl.BootstrapServiceImpl;
-import org.rabix.engine.service.impl.IntermediaryFilesServiceImpl;
 import org.rabix.engine.service.impl.JobReceiverImpl;
 import org.rabix.engine.service.impl.JobServiceImpl;
 import org.rabix.engine.service.impl.NoOpIntermediaryFilesServiceHandler;
@@ -104,10 +102,9 @@ public class ServerBuilder {
             bind(DownloadService.class).to(NoOpDownloadServiceImpl.class).in(Scopes.SINGLETON);
             bind(UploadService.class).to(NoOpUploadServiceImpl.class).in(Scopes.SINGLETON);
             bind(JobHTTPService.class).to(JobHTTPServiceImpl.class);
-            bind(IntermediaryFilesService.class).to(IntermediaryFilesServiceImpl.class).in(Scopes.SINGLETON);
             bind(IntermediaryFilesHandler.class).to(NoOpIntermediaryFilesServiceHandler.class).in(Scopes.SINGLETON);
-            bind(BackendHTTPService.class).to(BackendHTTPServiceImpl.class).in(Scopes.SINGLETON);
             bind(new TypeLiteral<ReceiveCallback<Job>>(){}).to(JobReceiverImpl.class).in(Scopes.SINGLETON);             
+            bind(BackendHTTPService.class).to(BackendHTTPServiceImpl.class).in(Scopes.SINGLETON);           
             bind(WorkerStatusCallback.class).to(NoOpWorkerStatusCallback.class).in(Scopes.SINGLETON);
             Set<Class<BackendModule>> backendModuleClasses = ClasspathScanner.<BackendModule>scanSubclasses(BackendModule.class);
             for (Class<BackendModule> backendModuleClass : backendModuleClasses) {

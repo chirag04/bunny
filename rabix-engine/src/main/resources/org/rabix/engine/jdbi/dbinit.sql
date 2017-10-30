@@ -437,3 +437,20 @@ alter table job alter column outputs  type bytea using convert_to(outputs::text,
 alter table job alter column inputs  type bytea using convert_to(inputs::text,'UTF8');
 alter table event alter column event  type bytea using convert_to(event::text,'UTF8');
 alter table variable_record alter column value  type bytea using convert_to(value::text,'UTF8');
+
+
+--changeset bunny:1487849040814-71 dbms:postgresql
+alter table backend alter column configuration type text
+--rollback alter table backend alter column configuration type jsonb USING configuration::jsonb
+
+
+--changeset bunny:1487849040814-72 dbms:postgresql
+ALTER TABLE intermediary_files ADD CONSTRAINT key PRIMARY KEY (root_id, filename);
+--rollback ALTER TABLE public.intermediary_files DROP CONSTRAINT key PRIMARY KEY (root_id, filename);
+
+--changeset bunny:1487849040814-73 dbms:postgresql
+ALTER TABLE public.job
+    drop CONSTRAINT job_backend_status_check;
+--rollback ALTER TABLE job ADD CONSTRAINT job_backend_status_check CHECK (backend_id IS NOT NULL OR status <> 'RUNNING'::job_status OR parent_id IS NULL);
+
+
