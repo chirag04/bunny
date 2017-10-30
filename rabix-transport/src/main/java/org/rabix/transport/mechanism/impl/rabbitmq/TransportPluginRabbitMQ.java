@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.configuration.Configuration;
-import org.rabix.common.helper.JSONHelper;
 import org.rabix.common.json.BeanSerializer;
 import org.rabix.common.json.processor.BeanProcessorException;
 import org.rabix.transport.mechanism.TransportPlugin;
@@ -40,9 +39,13 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
   private ExecutorService receiverThreadPool = Executors.newCachedThreadPool();
 
   private boolean durable;
+  
+  private int threads;
+  private Channel channel1, channel2;
 
   public TransportPluginRabbitMQ(Configuration configuration) throws TransportPluginException {
     this.configuration = configuration;
+    threads = configuration.getInt("rabbitmq.threads",16);
     while (true) {
       try {
         initConnection();
@@ -78,7 +81,9 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
         }
       }
       durable = TransportConfigRabbitMQ.durableQueues(configuration);
-      connection = factory.newConnection();
+      connection = factory.newConnection(Executors.newFixedThreadPool(threads));
+      this.channel1 = connection.createChannel();
+      this.channel2 = connection.createChannel();
     } catch (Exception e) {
       throw new TransportPluginException("Failed to initialize TransportPluginRabbitMQ", e);
     }
@@ -88,37 +93,19 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
    * {@link TransportPluginRabbitMQ} extension for Exchange initialization
    */
   public void initializeExchange(String exchange, String type) throws TransportPluginException {
-    Channel channel = null;
     try {
-      channel = connection.createChannel();
-      channel.exchangeDeclare(exchange, type, durable);
+      channel1.exchangeDeclare(exchange, type, durable);
     } catch (Exception e) {
       throw new TransportPluginException("Failed to declare RabbitMQ exchange " + exchange + " and type " + type, e);
-    } finally {
-      if (channel != null) {
-        try {
-          channel.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
   }
 
   public void initQueue(TransportQueueRabbitMQ queue) throws TransportPluginException {
-    Channel channel = null;
     try {
-      channel = connection.createChannel();
-      channel.queueDeclare(queue.getQueueName(), durable, false, false, null);
-      channel.queueBind(queue.getQueueName(), queue.getExchange(), queue.getRoutingKey());
+      channel1.queueDeclare(queue.getQueueName(), durable, false, false, null);
+      channel1.queueBind(queue.getQueueName(), queue.getExchange(), queue.getRoutingKey());
     } catch (Exception e) {
       throw new TransportPluginException("Failed to bind RabbitMQ queue " + queue, e);
-    } finally {
-      if (channel != null) {
-        try {
-          channel.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
   }
 
@@ -126,19 +113,11 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
    * {@link TransportPluginRabbitMQ} extension for Exchange initialization
    */
   public void deleteExchange(String exchange) throws TransportPluginException {
-    Channel channel = null;
     try {
-      channel = connection.createChannel();
-      channel.exchangeDelete(exchange, true);
+      channel1.exchangeDelete(exchange, true);
     } catch (Exception e) {
       throw new TransportPluginException("Failed to delete RabbitMQ exchange " + exchange, e);
     } finally {
-      if (channel != null) {
-        try {
-          channel.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
   }
 
@@ -161,37 +140,26 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
 
   @Override
   public <T> ResultPair<T> send(TransportQueueRabbitMQ queue, T entity) {
-    Channel channel = null;
     String payload = BeanSerializer.serializeFull(entity);
-    try {
-      while (true) {
-        try {
-          channel = connection.createChannel();
-          channel.basicPublish(queue.getExchange(), queue.getRoutingKey(), MessageProperties.PERSISTENT_TEXT_PLAIN, payload.getBytes(DEFAULT_ENCODING));
-          return ResultPair.success();
-        } catch (Exception e) {
-          logger.error("Failed to send a message to " + queue, e);
-          while (true) {
-            try {
-              Thread.sleep(RETRY_TIMEOUT*1000);
-            } catch (InterruptedException e1) {
-              // Ignore
-            }
-            try {
-              initConnection();
-              logger.info("Reconnected to {}", queue);
-              break;
-            } catch (TransportPluginException e1) {
-              logger.info("Sender reconnect failed. Trying again in {} seconds.", RETRY_TIMEOUT);
-            }
+    while (true) {
+      try {
+        channel1.basicPublish(queue.getExchange(), queue.getRoutingKey(), MessageProperties.PERSISTENT_TEXT_PLAIN, payload.getBytes(DEFAULT_ENCODING));
+        return ResultPair.success();
+      } catch (Exception e) {
+        logger.error("Failed to send a message to " + queue, e);
+        while (true) {
+          try {
+            Thread.sleep(RETRY_TIMEOUT * 1000);
+          } catch (InterruptedException e1) {
+            // Ignore
           }
-        }
-      }
-    } finally {
-      if (channel != null) {
-        try {
-          channel.close();
-        } catch (Exception ignore) {
+          try {
+            initConnection();
+            logger.info("Reconnected to {}", queue);
+            break;
+          } catch (TransportPluginException e1) {
+            logger.info("Sender reconnect failed. Trying again in {} seconds.", RETRY_TIMEOUT);
+          }
         }
       }
     }
@@ -244,8 +212,7 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
       DefaultConsumer consumer = null;
       String queueName = queue.getQueueName();
       try {
-        final Channel channel = connection.createChannel();
-        consumer = new DefaultConsumer(channel) {
+        consumer = new DefaultConsumer(channel2) {
           @Override
           public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
             String message = new String(body, "UTF-8");
@@ -254,10 +221,11 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
             } catch (TransportPluginException e) {
               throw new IOException();
             }
-            channel.basicAck(envelope.getDeliveryTag(), false);
+            channel2.basicAck(envelope.getDeliveryTag(), false);
           }
         };
-        channel.basicConsume(queueName, false, consumer);
+        channel2.basicQos(threads*50);
+        channel2.basicConsume(queueName, false, consumer);
       } catch (BeanProcessorException e) {
         logger.error("Failed to deserialize message payload", e);
         errorCallback.handleError(e);
@@ -280,7 +248,6 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
         }
       }
     }
-
     void stop() {
       isStopped = true;
     }
