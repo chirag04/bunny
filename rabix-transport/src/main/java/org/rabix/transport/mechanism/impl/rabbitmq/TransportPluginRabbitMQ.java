@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.configuration.Configuration;
+import org.rabix.common.helper.JSONHelper;
 import org.rabix.common.json.BeanSerializer;
 import org.rabix.common.json.processor.BeanProcessorException;
 import org.rabix.transport.mechanism.TransportPlugin;
@@ -22,7 +23,6 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.MessageProperties;
-import com.rabbitmq.client.impl.nio.NioParams;
 
 public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRabbitMQ> {
 
@@ -39,13 +39,10 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
 
   private ExecutorService receiverThreadPool = Executors.newCachedThreadPool();
 
-  private ExecutorService consumers;
-
   private boolean durable;
 
   public TransportPluginRabbitMQ(Configuration configuration) throws TransportPluginException {
     this.configuration = configuration;
-    consumers = Executors.newFixedThreadPool(configuration.getInt("engine.consumers.count", 10));
     while (true) {
       try {
         initConnection();
@@ -81,9 +78,7 @@ public class TransportPluginRabbitMQ implements TransportPlugin<TransportQueueRa
         }
       }
       durable = TransportConfigRabbitMQ.durableQueues(configuration);
-      factory.useNio();
-      factory.setNioParams(new NioParams().setNbIoThreads(25));
-      connection = factory.newConnection(consumers);
+      connection = factory.newConnection();
     } catch (Exception e) {
       throw new TransportPluginException("Failed to initialize TransportPluginRabbitMQ", e);
     }
