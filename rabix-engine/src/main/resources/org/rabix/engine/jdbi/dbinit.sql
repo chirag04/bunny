@@ -437,3 +437,6 @@ alter table job alter column outputs  type bytea using convert_to(outputs::text,
 alter table job alter column inputs  type bytea using convert_to(inputs::text,'UTF8');
 alter table event alter column event  type bytea using convert_to(event::text,'UTF8');
 alter table variable_record alter column value  type bytea using convert_to(value::text,'UTF8');
+
+--changeset bunny:1487849040814-71 dbms:postgresql
+alter table job drop constraint job_backend_status_check;

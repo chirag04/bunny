@@ -95,13 +95,6 @@ public class JobServiceImpl implements JobService {
   public void update(Job job) throws JobServiceException {
     logger.debug("Update Job {} in context {}", job.getName(), job.getRootId().toString());
     try {
-      if (!job.isRoot()) {
-        UUID backendId = jobRepository.getBackendId(job.getId());
-        if (backendId == null) {
-          logger.warn("Tried to update Job " + job.getId() + " without backend assigned.");
-          return;
-        }
-      }
       JobStatusEvent statusEvent = null;
       JobStatus status = job.getStatus();
       switch (status) {
