@@ -46,12 +46,6 @@ public class JobServiceImpl implements JobService {
   private static final long FREE_RESOURCES_WAIT_TIME = 3000L;
   
   private final static Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
-  
-  private final JobRecordService jobRecordService;
-  private final LinkRecordService linkRecordService;
-  private final VariableRecordService variableRecordService;
-  private final ContextRecordService contextRecordService;
-
   private final JobRepository jobRepository;
   private final DAGNodeService dagNodeService;
   private final AppService appService;
@@ -86,10 +80,6 @@ public class JobServiceImpl implements JobService {
     this.eventProcessor = eventProcessor;
     this.jobRepository = jobRepository;
 
-    this.jobRecordService = jobRecordService;
-    this.linkRecordService = linkRecordService;
-    this.variableRecordService = variableRecordService;
-    this.contextRecordService = contextRecordService;
     this.scheduler = scheduler;
     this.transactionHelper = transactionHelper;
     this.engineStatusCallback = statusCallback;
@@ -103,74 +93,36 @@ public class JobServiceImpl implements JobService {
   
   @Override
   public void update(Job job) throws JobServiceException {
-    logger.debug("Update Job {}", job.getId());
+    logger.debug("Update Job {} in context {}", job.getName(), job.getRootId().toString());
     try {
-      final AtomicBoolean isSuccessful = new AtomicBoolean(false);
-      final AtomicReference<Event> eventWrapper = new AtomicReference<Event>(null);
-      transactionHelper.doInTransaction(new TransactionHelper.TransactionCallback<Void>() {
-        @Override
-        public Void call() throws Exception {
-          if (!job.isRoot()) {
-            UUID backendId = jobRepository.getBackendId(job.getId());
-            if (backendId == null) {
-              logger.warn("Tried to update Job " + job.getId() + " without backend assigned.");
-              return null;
-            }  
-            
-            JobStatus dbStatus = jobRepository.getStatus(job.getId());
-            JobStateValidator.checkState(JobHelper.transformStatus(dbStatus), JobHelper.transformStatus(job.getStatus()));
-          }
-          JobRecord jobRecord = jobRecordService.find(job.getName(), job.getRootId());
-          if (jobRecord == null) {
-            logger.info("Possible stale message. Job {} for root {} doesn't exist.", job.getName(), job.getRootId());
-            return null;
-          }
-          JobStatusEvent statusEvent = null;
-          JobStatus status = job.getStatus();
-          switch (status) {
-          case RUNNING:
-            if (JobRecord.JobState.RUNNING.equals(jobRecord.getState())) {
-              return null;
-            }
-            JobStateValidator.checkState(jobRecord, JobRecord.JobState.RUNNING);
-            statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.RUNNING, job.getOutputs(), job.getId(), job.getName());
-            break;
-          case FAILED:
-            if (JobRecord.JobState.FAILED.equals(jobRecord.getState())) {
-              return null;
-            }
-            JobStateValidator.checkState(jobRecord, JobRecord.JobState.FAILED);
-            statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.FAILED, job.getMessage(), job.getId(), job.getName());
-            break;
-          case ABORTED:
-            if (JobRecord.JobState.ABORTED.equals(jobRecord.getState())) {
-              return null;
-            }
-            JobStateValidator.checkState(jobRecord, JobRecord.JobState.ABORTED);
-            Job rootJob = jobRepository.get(jobRecord.getRootId());
-            handleJobRootAborted(rootJob);
-            statusEvent = new JobStatusEvent(rootJob.getName(), rootJob.getRootId(), JobRecord.JobState.ABORTED, rootJob.getId(), rootJob.getName());
-            break;
-          case COMPLETED:
-            if (JobRecord.JobState.COMPLETED.equals(jobRecord.getState())) {
-              return null;
-            }
-            JobStateValidator.checkState(jobRecord, JobRecord.JobState.COMPLETED);
-            statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.COMPLETED, job.getOutputs(), job.getId(), job.getName());
-            break;
-          default:
-            break;
-          }
-          jobRepository.update(job);
-          eventProcessor.persist(statusEvent);
-          eventWrapper.set(statusEvent);
-          isSuccessful.set(true);
-          return null;
+      if (!job.isRoot()) {
+        UUID backendId = jobRepository.getBackendId(job.getId());
+        if (backendId == null) {
+          logger.warn("Tried to update Job " + job.getId() + " without backend assigned.");
+          return;
         }
-      });
-      if (isSuccessful.get()) {
-        eventProcessor.addToExternalQueue(eventWrapper.get());
       }
+      JobStatusEvent statusEvent = null;
+      JobStatus status = job.getStatus();
+      switch (status) {
+        case RUNNING:
+          statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.RUNNING, job.getOutputs(), job.getId(), job.getName());
+          break;
+        case FAILED:
+          statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.FAILED, job.getMessage(), job.getId(), job.getName());
+          break;
+        case ABORTED:
+          Job rootJob = jobRepository.get(job.getRootId());
+          handleJobRootAborted(rootJob);
+          statusEvent = new JobStatusEvent(rootJob.getName(), rootJob.getRootId(), JobRecord.JobState.ABORTED, rootJob.getId(), rootJob.getName());
+          break;
+        case COMPLETED:
+          statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.COMPLETED, job.getOutputs(), job.getId(), job.getName());
+          break;
+        default:
+          break;
+      }
+      eventProcessor.send(statusEvent);
     } catch (Exception e) {
       // TODO handle exception
       logger.error("Failed to update Job " + job.getName() + " and root ID " + job.getRootId(), e);

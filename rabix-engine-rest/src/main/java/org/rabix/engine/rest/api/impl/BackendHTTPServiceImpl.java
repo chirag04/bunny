@@ -24,36 +24,38 @@ public class BackendHTTPServiceImpl implements BackendHTTPService {
   private final static Logger logger = LoggerFactory.getLogger(BackendHTTPServiceImpl.class);
   
   private final BackendService backendService;
-  
+
   @Inject
   public BackendHTTPServiceImpl(BackendService backendService) {
     this.backendService = backendService;
   }
-  
+
   @Override
   @POST
   public Response create(Backend backend) {
     try {
-      return ok(backendService.create(backend));
+      Backend created = backendService.create(backend);
+      backendService.startBackend(created);
+      return ok(created);
     } catch (Exception e) {
       logger.error("Failed to create Backend", e);
       return error();
     }
   }
-  
+
   private Response error() {
     return Response.status(Status.BAD_REQUEST).build();
   }
-  
+
   private Response ok() {
     return Response.ok(Collections.emptyMap()).build();
   }
-  
+
   private Response ok(Object items) {
     if (items == null) {
       return ok();
     }
     return Response.ok().entity(items).build();
   }
-  
+
 }
