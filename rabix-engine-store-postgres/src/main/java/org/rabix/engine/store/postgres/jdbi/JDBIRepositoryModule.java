@@ -1,40 +1,21 @@
 package org.rabix.engine.store.postgres.jdbi;
 
 import java.sql.SQLException;
-import java.util.UUID;
 import java.util.logging.Logger;
 
 import org.apache.commons.configuration.Configuration;
-import org.ehcache.Cache;
 import org.ehcache.CacheManager;
-import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
-import org.ehcache.config.builders.ResourcePoolsBuilder;
-import org.ehcache.impl.serialization.PlainJavaSerializer;
 import org.postgresql.jdbc3.Jdbc3PoolingDataSource;
-import org.rabix.engine.store.cache.JobRecordCacheWriter;
 import org.rabix.engine.store.cache.JobRecordCachedRepository;
-import org.rabix.engine.store.cache.JobRecordCachedRepository.JobRecordKey;
-import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRecordRepository;
-import org.rabix.engine.store.repository.AppRepository;
-import org.rabix.engine.store.repository.BackendRepository;
-import org.rabix.engine.store.repository.ContextRecordRepository;
-import org.rabix.engine.store.repository.DAGRepository;
-import org.rabix.engine.store.repository.EventRepository;
-import org.rabix.engine.store.repository.IntermediaryFilesRepository;
-import org.rabix.engine.store.repository.JobRecordRepository;
-import org.rabix.engine.store.repository.JobRepository;
-import org.rabix.engine.store.repository.JobStatsRecordRepository;
-import org.rabix.engine.store.repository.LinkRecordRepository;
-import org.rabix.engine.store.repository.VariableRecordRepository;
+import org.rabix.engine.store.repository.*;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.logging.SLF4JLog;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 
 import liquibase.Contexts;
@@ -47,6 +28,7 @@ public class JDBIRepositoryModule extends AbstractModule {
 
   private static final String DBINIT_SQL = "org/rabix/engine/jdbi/dbinit.sql";
 
+
   public JDBIRepositoryModule() {}
 
   @Override
@@ -55,7 +37,6 @@ public class JDBIRepositoryModule extends AbstractModule {
         .build(true);
     bind(CacheManager.class).toInstance(cacheManager);
   }
-
 
   @Singleton
   @Provides
@@ -101,26 +82,31 @@ public class JDBIRepositoryModule extends AbstractModule {
   }
 
   @Provides
+  @Singleton
   public AppRepository provideAppRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.applicationRepository();
   }
 
   @Provides
+  @Singleton
   public BackendRepository provideBackendRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.backendRepository();
   }
 
   @Provides
+  @Singleton
   public DAGRepository provideDAGRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.dagRepository();
   }
 
   @Provides
+  @Singleton
   public JobRepository provideJobRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.jobRepository();
   }
 
   @Provides
+  @Singleton
   public EventRepository provideEventRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.eventRepository();
   }
@@ -136,26 +122,31 @@ public class JDBIRepositoryModule extends AbstractModule {
   }
 
   @Provides
-  public LinkRecordRepository provideLinkRecordRepository(JDBIRepositoryRegistry repositoryRegistry, @Named("cached") boolean cached) {
+  @Singleton
+  public LinkRecordRepository provideLinkRecordRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.linkRecordRepository();
   }
 
   @Provides
+  @Singleton
   public VariableRecordRepository provideVariableRecordRepository(JDBIRepositoryRegistry repositoryRegistry, @Named("cached") boolean cached) {
     return repositoryRegistry.variableRecordRepository();
   }
 
   @Provides
+  @Singleton
   public ContextRecordRepository provideContextRecordRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.contextRecordRepository();
   }
 
   @Provides
+  @Singleton
   public JobStatsRecordRepository provideJobStatsRecordRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.jobStatsRecordRepository();
   }
 
   @Provides
+  @Singleton
   public IntermediaryFilesRepository provideIntermediaryFilesRepository(JDBIRepositoryRegistry repositoryRegistry) {
     return repositoryRegistry.intermediaryFilesRepository();
   }
