@@ -1,5 +1,6 @@
 package org.rabix.engine.store.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ import org.rabix.engine.store.model.scatter.ScatterStrategy;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class JobRecord extends TimestampedModel {
+public class JobRecord extends TimestampedModel implements Serializable{
 
   public static class JobIdRootIdPair {
     final public String id;

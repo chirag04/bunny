@@ -9,18 +9,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import org.postgresql.util.PGobject;
 import org.rabix.common.helper.JSONHelper;
-import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRecordRepository.JobRecordMapper;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.JobRecord.JobIdRootIdPair;
 import org.rabix.engine.store.model.JobRecord.PortCounter;
 import org.rabix.engine.store.model.scatter.ScatterStrategy;
+import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRecordRepository.JobRecordMapper;
 import org.rabix.engine.store.repository.JobRecordRepository;
 import org.skife.jdbi.v2.SQLStatement;
 import org.skife.jdbi.v2.StatementContext;
@@ -28,7 +27,6 @@ import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.Binder;
 import org.skife.jdbi.v2.sqlobject.BinderFactory;
 import org.skife.jdbi.v2.sqlobject.BindingAnnotation;
-import org.skife.jdbi.v2.sqlobject.SqlBatch;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
@@ -40,43 +38,44 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 @RegisterMapper(JobRecordMapper.class)
 @UseStringTemplate3StatementLocator
-public abstract class JDBIJobRecordRepository extends JobRecordRepository {
+public interface JDBIJobRecordRepository extends JobRecordRepository {
 
   @Override
-  @SqlUpdate("insert into job_record (id,external_id,root_id,parent_id,blocking,job_state,input_counters,output_counters,is_scattered,is_container,is_scatter_wrapper,global_inputs_count,global_outputs_count,scatter_strategy,dag_hash,created_at,modified_at) values (:id,:external_id,:root_id,:parent_id,:blocking,:job_state::job_record_state,:input_counters,:output_counters,:is_scattered,:is_container,:is_scatter_wrapper,:global_inputs_count,:global_outputs_count,:scatter_strategy,:dag_hash, :created_at,:modified_at)")
-  public abstract int insert(@BindJobRecord JobRecord jobRecord);
+  @SqlUpdate("insert into job_record (id,external_id,root_id,parent_id,blocking,job_state,input_counters,output_counters,is_scattered,is_container,is_scatter_wrapper,global_inputs_count,global_outputs_count,scatter_strategy,dag_hash,created_at,modified_at) values (:id,:external_id,:root_id,:parent_id,:blocking,:job_state::job_record_state,:input_counters,:output_counters,:is_scattered,:is_container,:is_scatter_wrapper,:global_inputs_count,:global_outputs_count,:scatter_strategy,:dag_hash, :created_at,:modified_at) "
+      + " on conflict (root_id, id) do update set  blocking=:blocking,job_state=:job_state::job_record_state,input_counters=:input_counters,output_counters=:output_counters,is_scattered=:is_scattered,is_container=:is_container,is_scatter_wrapper=:is_scatter_wrapper,global_inputs_count=:global_inputs_count,global_outputs_count=:global_outputs_count,scatter_strategy=:scatter_strategy,modified_at='now'::timestamp")
+  public abstract void insert(@BindJobRecord JobRecord jobRecord);
   
   @Override
   @SqlUpdate("update job_record set id=:id,external_id=:external_id,root_id=:root_id,parent_id=:parent_id,blocking=:blocking,job_state=:job_state::job_record_state,input_counters=:input_counters,output_counters=:output_counters,is_scattered=:is_scattered,is_container=:is_container,is_scatter_wrapper=:is_scatter_wrapper,global_inputs_count=:global_inputs_count,global_outputs_count=:global_outputs_count,scatter_strategy=:scatter_strategy,dag_hash=:dag_hash,modified_at='now'::timestamp where id=:id and root_id=:root_id")
-  public abstract int update(@BindJobRecord JobRecord jobRecord);
+  public abstract void update(@BindJobRecord JobRecord jobRecord);
+//  
+//  @Override
+//  @SqlBatch("insert into job_record (id,external_id,root_id,parent_id,blocking,job_state,input_counters,output_counters,is_scattered,is_container,is_scatter_wrapper,global_inputs_count,global_outputs_count,scatter_strategy,dag_hash,created_at,modified_at) values (:id,:external_id,:root_id,:parent_id,:blocking,:job_state::job_record_state,:input_counters,:output_counters,:is_scattered,:is_container,:is_scatter_wrapper,:global_inputs_count,:global_outputs_count,:scatter_strategy,:dag_hash,:created_at,:modified_at)")
+//  public abstract void insertBatch(@BindJobRecord Iterator<JobRecord> records);
+//  
+//  @Override
+//  @SqlBatch("update job_record set id=:id,external_id=:external_id,root_id=:root_id,parent_id=:parent_id,blocking=:blocking,job_state=:job_state::job_record_state,input_counters=:input_counters,output_counters=:output_counters,is_scattered=:is_scattered,is_container=:is_container,is_scatter_wrapper=:is_scatter_wrapper,global_inputs_count=:global_inputs_count,global_outputs_count=:global_outputs_count,scatter_strategy=:scatter_strategy,dag_hash=:dag_hash,modified_at='now'::timestamp where id=:id and root_id=:root_id")
+//  public abstract void updateBatch(@BindJobRecord Iterator<JobRecord> records);
+//
+//  @Override
+//  @SqlUpdate("update job_record set job_state=:state::job_record_state where root_id=:root_id and job_state::text in (<states>)")
+//  public abstract void updateStatus(@Bind("root_id") UUID rootId, @Bind("state") JobRecord.JobState state, @BindIn("states") Set<JobRecord.JobState> whereStates);
+//  
+  @Override
+  @SqlUpdate("delete from job_record where job_state=:state::job_record_state and root_id=:root_id")
+  public abstract void deleteByStatus(@Bind("root_id") UUID rootId, @Bind("state") JobRecord.JobState state);
   
-  @Override
-  @SqlBatch("insert into job_record (id,external_id,root_id,parent_id,blocking,job_state,input_counters,output_counters,is_scattered,is_container,is_scatter_wrapper,global_inputs_count,global_outputs_count,scatter_strategy,dag_hash,created_at,modified_at) values (:id,:external_id,:root_id,:parent_id,:blocking,:job_state::job_record_state,:input_counters,:output_counters,:is_scattered,:is_container,:is_scatter_wrapper,:global_inputs_count,:global_outputs_count,:scatter_strategy,:dag_hash,:created_at,:modified_at)")
-  public abstract void insertBatch(@BindJobRecord Iterator<JobRecord> records);
-  
-  @Override
-  @SqlBatch("update job_record set id=:id,external_id=:external_id,root_id=:root_id,parent_id=:parent_id,blocking=:blocking,job_state=:job_state::job_record_state,input_counters=:input_counters,output_counters=:output_counters,is_scattered=:is_scattered,is_container=:is_container,is_scatter_wrapper=:is_scatter_wrapper,global_inputs_count=:global_inputs_count,global_outputs_count=:global_outputs_count,scatter_strategy=:scatter_strategy,dag_hash=:dag_hash,modified_at='now'::timestamp where id=:id and root_id=:root_id")
-  public abstract void updateBatch(@BindJobRecord Iterator<JobRecord> records);
-
-  @Override
-  @SqlUpdate("update job_record set job_state=:state::job_record_state where root_id=:root_id and job_state::text in (<states>)")
-  public abstract void updateStatus(@Bind("root_id") UUID rootId, @Bind("state") JobRecord.JobState state, @BindIn("states") Set<JobRecord.JobState> whereStates);
-  
-  @Override
-  @SqlUpdate("delete from job_record where job_state=:state::job_record_state")
-  public abstract int deleteByStatus(@Bind("state") JobRecord.JobState state);
-  
-  @Override
-  @SqlBatch("delete from job_record where id=:id and root_id=:root_id")
-  public abstract void delete(@BindJobIdRootId Set<JobIdRootIdPair> pairs);
+//  @Override
+//  @SqlBatch("delete from job_record where id=:id and root_id=:root_id")
+//  public abstract void delete(@BindJobIdRootId Set<JobIdRootIdPair> pairs);
   
   @Override
   @SqlQuery("select * from job_record where root_id=:root_id")
-  public abstract List<JobRecord> get(@Bind("root_id") UUID rootId);
-  
-  @Override
-  @SqlQuery("select * from job_record where id='root' and root_id=:root_id")
-  public abstract JobRecord getRoot(@Bind("root_id") UUID rootId);
+  public abstract List<JobRecord> getAll(@Bind("root_id") UUID rootId);
+//  
+//  @Override
+//  @SqlQuery("select * from job_record where id='root' and root_id=:root_id")
+//  public abstract JobRecord getRoot(@Bind("root_id") UUID rootId);
   
   @Override
   @SqlQuery("select * from job_record where id=:id and root_id=:root_id")
@@ -86,9 +85,9 @@ public abstract class JDBIJobRecordRepository extends JobRecordRepository {
   @SqlQuery("select * from job_record where parent_id=:parent_id and root_id=:root_id")
   public abstract List<JobRecord> getByParent(@Bind("parent_id") UUID parentId, @Bind("root_id") UUID rootId);
   
-  @Override
-  @SqlQuery("select * from job_record where job_state='READY'::job_record_state and root_id=:root_id")
-  public abstract List<JobRecord> getReady(@Bind("root_id") UUID rootId);
+//  @Override
+//  @SqlQuery("select * from job_record where job_state='READY'::job_record_state and root_id=:root_id")
+//  public abstract List<JobRecord> getReady(@Bind("root_id") UUID rootId);
   
   @Override
   @SqlQuery("select * from job_record where job_state::text in (<states>) and root_id=:root_id")

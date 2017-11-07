@@ -62,12 +62,11 @@ public class StoreCleanupServiceImpl implements StoreCleanupService {
                 Set<UUID> rootIds = new HashSet<>();
                 for (Job rootJob : completedRootJobs) {
                   rootIds.add(rootJob.getRootId());
+                  jobRecordRepository.deleteByStatus(rootJob.getRootId(), JobRecord.JobState.COMPLETED);
                 }
                 jobRepository.deleteByRootIds(rootIds);
                 intermediaryFilesRepository.deleteByRootIds(rootIds);
-
-                int deleted = jobRecordRepository.deleteByStatus(JobRecord.JobState.COMPLETED);
-                logger.debug("Deleted {} completed Jobs", deleted);
+                logger.debug("Deleted {} completed Jobs", rootIds.size());
                 return null;
               }
             });

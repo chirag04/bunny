@@ -1,11 +1,11 @@
 package org.rabix.engine.service.impl;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.rabix.bindings.model.dag.DAGLinkPort;
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
+import org.rabix.common.helper.InternalSchemaHelper;
 import org.rabix.engine.service.JobRecordService;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.JobRecord.PortCounter;
@@ -28,32 +28,28 @@ public class JobRecordServiceImpl implements JobRecordService {
   public void create(JobRecord jobRecord) {
     repo.insert(jobRecord);
   }
-
-  public void delete(UUID rootId) {}
-
   public void update(JobRecord jobRecord) {
     repo.update(jobRecord);
   }
-
-  public List<JobRecord> findReady(UUID rootId) {
-    return repo.getReady(rootId);
-  }
-
-  public List<JobRecord> findByParent(UUID parentId, UUID rootId) {
-    return repo.getByParent(parentId, rootId);
-  }
-
-  @Override
-  public List<JobRecord> find(UUID rootId, Set<JobRecord.JobState> statuses) {
-    return repo.get(rootId, statuses);
-  }
-
   public JobRecord find(String id, UUID rootId) {
     return repo.get(id, rootId);
   }
 
+  public void delete(UUID rootId) {
+  }
+  
+  @Override
+  public List<JobRecord> find(UUID rootId) {
+    return repo.getAll(rootId);
+  }
+  
+  public List<JobRecord> findByParent(UUID parentId, UUID rootId) {
+    return repo.getByParent(parentId, rootId);
+  }
+
+
   public JobRecord findRoot(UUID rootId) {
-    return repo.getRoot(rootId);
+    return this.find(InternalSchemaHelper.ROOT_NAME, rootId);
   }
 
   public void increaseInputPortIncoming(JobRecord jobRecord, String port) {
@@ -203,5 +199,4 @@ public class JobRecordServiceImpl implements JobRecordService {
       }
     }
   }
-
 }

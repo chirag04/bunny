@@ -205,11 +205,6 @@ public class JobServiceImpl implements JobService {
   }
   
   @Override
-  public Set<Job> getReady(EventProcessor eventProcessor, UUID rootId) throws JobServiceException {
-    return jobHelper.createReadyJobs(rootId, setResources);
-  }
-  
-  @Override
   public Job get(UUID id) {
     return jobRepository.get(id);
   }

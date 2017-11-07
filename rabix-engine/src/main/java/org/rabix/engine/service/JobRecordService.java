@@ -1,7 +1,6 @@
 package org.rabix.engine.service;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.rabix.bindings.model.dag.DAGLinkPort;
@@ -10,23 +9,17 @@ import org.rabix.engine.store.model.JobRecord;
 
 public interface JobRecordService {
 
-  public static UUID generateUniqueId() {
-    return UUID.randomUUID();
-  }
-  
   void create(JobRecord jobRecord);
 
   void delete(UUID rootId);
   
   void update(JobRecord jobRecord);
   
-  List<JobRecord> findReady(UUID rootId);
-
-  List<JobRecord> findByParent(UUID parentId, UUID rootId);
-  
   JobRecord find(String id, UUID rootId);
   
-  List<JobRecord> find(UUID rootId, Set<JobRecord.JobState> statuses);
+  List<JobRecord> findByParent(UUID parentId, UUID rootId);
+  
+  List<JobRecord> find(UUID rootId);
   
   JobRecord findRoot(UUID rootId);
   
