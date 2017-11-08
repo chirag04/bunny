@@ -19,7 +19,6 @@ public class JobCachedRepository implements JobRepository {
 
   private JDBIJobRepository repo;
   private Cache<UUID, HashSet> setCache;
-  private Cache<UUID, Job> cache;
 
   public static final String SET_CACHE = "jobsCache";
   public static final String CACHE = "jobCache";
@@ -29,12 +28,7 @@ public class JobCachedRepository implements JobRepository {
     this.setCache = manager.getCache(JobCachedRepository.SET_CACHE, UUID.class, HashSet.class);
     if (setCache == null) {
       this.setCache = manager.createCache(JobCachedRepository.SET_CACHE, CacheConfigurationBuilder
-          .newCacheConfigurationBuilder(UUID.class, HashSet.class, ResourcePoolsBuilder.heap(1000)).withLoaderWriter(new JobsCacheWriter(repo)).build());
-    }
-    this.cache = manager.getCache(JobCachedRepository.CACHE, UUID.class, Job.class);
-    if (cache == null) {
-      this.cache = manager.createCache(JobCachedRepository.CACHE, CacheConfigurationBuilder
-          .newCacheConfigurationBuilder(UUID.class, Job.class, ResourcePoolsBuilder.heap(1000)).withLoaderWriter(new JobCacheWriter(repo)).build());
+          .newCacheConfigurationBuilder(UUID.class, HashSet.class, ResourcePoolsBuilder.heap(1000)).build());
     }
   }
 
@@ -48,8 +42,12 @@ public class JobCachedRepository implements JobRepository {
 
   @Override
   public void insert(Job job, UUID groupId, String producedByNode) {
-    Set set = setCache.get(groupId);
-    set.add(job);
+    if (job.getRootId().equals(groupId)) {
+      repo.insert(job, groupId, producedByNode);
+    } else {
+      Set set = setCache.get(groupId);
+      set.add(job);
+    }
   }
 
   @Override
