@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.rabix.bindings.model.Job;
-import org.rabix.engine.store.repository.JobRepository.JobEntity;
 
 public interface JobService {
 
@@ -16,17 +15,7 @@ public interface JobService {
   void stop(UUID id) throws JobServiceException;
   
   void delete(UUID jobId);
-
-  void updateBackend(UUID jobId, UUID backendId);
-
-  void updateBackends(Set<JobEntity> entities);
   
-  Set<UUID> getBackendsByRootId(UUID rootId);
-
-  void dealocateJobs(UUID backendId);
-
-  Set<JobEntity> getReadyFree();
-
   Job get(UUID id);
 
   void handleJobCompleted(Job job);

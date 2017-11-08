@@ -12,38 +12,20 @@ public interface JobRepository {
 
   void insert(Job job, UUID groupId, String producedByNode);
   
+  void insert(Iterator<Job> jobs);
+
   void update(Job job);
   
   void update(Iterator<Job> jobs);
   
   void updateStatus(UUID rootId, JobStatus status, Set<JobStatus> whereStatuses);
-  
-  void updateBackendId(UUID jobId, UUID backendId);
-  
-  void updateBackendIds(Iterator<JobEntity> jobBackendPair);
-  
-  void dealocateJobs(UUID backendId);
-  
+    
   Job get(UUID id);
-  
-  Set<Job> get();
-  
-  Set<Job> getByRootId(UUID rootId);
   
   Set<Job> getRootJobsForDeletion(JobStatus status, Timestamp olderThanTime);
   
-  Set<Job> get(UUID rootID, Set<JobStatus> whereStatuses);
-  
-  Set<UUID> getBackendsByRootId(UUID rootId);
-  
-  UUID getBackendId(UUID jobId);
-  
   Set<Job> getReadyJobsByGroupId(UUID groupId);
-
-  Set<JobEntity> getReadyFree();
-  
-  JobStatus getStatus(UUID id);
-  
+    
   void deleteByRootIds(Set<UUID> rootIds);
   
   default void updatePartial(Job job) {

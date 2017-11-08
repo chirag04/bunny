@@ -46,32 +46,24 @@ public interface JDBIJobRepository extends JobRepository {
   void insert(@BindJob Job job, @Bind("group_id") UUID groupId, @Bind("produced_by_node") String producedByNode);
 
   @Override
+  @SqlBatch("insert into job (id,root_id,name, parent_id, status, message, inputs, outputs, resources, app, config) values (:id,:root_id,:name,:parent_id,:status::job_status,:message,:inputs,:outputs,:resources::jsonb,:app,:config::jsonb)")
+  void insert(@BindJob Iterator<Job> jobs);
+  
+  @Override
   @SqlUpdate("update job set root_id=:root_id,name=:name, parent_id=:parent_id, status=:status::job_status, message=:message, inputs=:inputs, outputs=:outputs, resources=:resources::jsonb,app=:app,config=:config::jsonb,modified_at='now' where id=:id")
   void update(@BindJob Job job);
 
   @Override
   @SqlUpdate("update job set status=:status::job_status, message=:message, outputs=:outputs, modified_at='now', config=:config::jsonb where id=:id")
   void updatePartial(@BindJob Job job);
-  
+
   @Override
   @SqlBatch("update job set root_id=:root_id,name=:name, parent_id=:parent_id, status=:status::job_status, message=:message, inputs=:inputs, outputs=:outputs, resources=:resources::jsonb,app=:app,config=:config::jsonb,modified_at='now' where id=:id")
   void update(@BindJob Iterator<Job> jobs);
 
   @Override
-  @SqlUpdate("update job set backend_id=:backend_id,modified_at='now' where id=:id")
-  void updateBackendId(@Bind("id") UUID jobId, @Bind("backend_id") UUID backendId);
-  
-  @Override
-  @SqlBatch("update job set backend_id=:backend_id,modified_at='now' where id=:id")
-  void updateBackendIds(@BindJobEntityBackendId Iterator<JobEntity> entities);
-
-  @Override
   @SqlUpdate("update job set status=:status::job_status,modified_at='now' where status::text in (<statuses>) and root_id=:root_id")
   void updateStatus(@Bind("root_id") UUID rootId, @Bind("status") JobStatus status, @BindIn("statuses") Set<JobStatus> whereStatuses);
-  
-  @Override
-  @SqlUpdate("update job set backend_id=null, status='READY'::job_status,modified_at='now' where backend_id=:backend_id and status in ('READY'::job_status,'RUNNING'::job_status)")
-  void dealocateJobs(@Bind("backend_id") UUID backendId);
 
   @Override
   @SqlQuery("select * from job where id=:id")
@@ -82,36 +74,8 @@ public interface JDBIJobRepository extends JobRepository {
   Set<Job> getRootJobsForDeletion(@Bind("status") JobStatus status, @Bind("time") Timestamp olderThanTime);
   
   @Override
-  @SqlQuery("select status from job where id=:id")
-  JobStatus getStatus(@Bind("id") UUID id);
-  
-  @Override
-  @SqlQuery("select * from job")
-  Set<Job> get();
-  
-  @Override
-  @SqlQuery("select * from job where status::text in (<statuses>) and root_id=:root_id")
-  Set<Job> get(@Bind("root_id") UUID rootID, @BindIn("statuses") Set<JobStatus> whereStatuses);
-  
-  @Override
-  @SqlQuery("select backend_id from job where root_id=:root_id")
-  Set<UUID> getBackendsByRootId(@Bind("root_id") UUID rootId);
-  
-  @Override
-  @SqlQuery("select backend_id from job where id=:id")
-  UUID getBackendId(@Bind("id") UUID id);
-  
-  @Override
-  @SqlQuery("select * from job where root_id=:root_id")
-  Set<Job> getByRootId(@Bind("root_id") UUID rootId);
-  
-  @Override
   @SqlQuery("select * from job where group_id=:group_id and status='READY'::job_status")
   Set<Job> getReadyJobsByGroupId(@Bind("group_id") UUID group_id);
-
-  @Override
-  @SqlQuery("select * from job where backend_id is null and status='READY'::job_status")
-  Set<JobEntity> getReadyFree();
   
   @Override
   @SqlUpdate("delete from job where root_id in (<ids>)")

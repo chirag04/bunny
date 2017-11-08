@@ -8,8 +8,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.rabix.bindings.model.Job;
+import org.rabix.bindings.model.Job.JobStatus;
 import org.rabix.common.helper.JSONHelper;
 import org.rabix.engine.event.Event;
 import org.rabix.engine.event.Event.EventType;
@@ -89,7 +91,7 @@ public class EventProcessorImpl implements EventProcessor {
                   return null;
                 }
                 if (checkForReadyJobs(eventReference.get())) {
-                  Set<Job> readyJobs = jobRepository.getReadyJobsByGroupId(eventReference.get().getEventGroupId());
+                  Set<Job> readyJobs = jobRepository.getReadyJobsByGroupId(eventReference.get().getEventGroupId()).stream().filter(job->job.getStatus().equals(JobStatus.READY)).collect(Collectors.toSet());
                   jobService.handleJobsReady(readyJobs, eventReference.get().getContextId(), eventReference.get().getProducedByNode());  
                 }
                 eventRepository.deleteGroup(eventReference.get().getEventGroupId());

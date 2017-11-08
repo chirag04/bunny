@@ -9,13 +9,10 @@ import org.ehcache.Cache;
 import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
-import org.rabix.engine.store.cache.JobRecordCachedRepository.JobRecordKey;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.JobRecord.JobState;
 import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRecordRepository;
 import org.rabix.engine.store.repository.JobRecordRepository;
-
-import com.google.inject.name.Named;
 
 public class JobRecordCachedRepository implements JobRecordRepository {
 

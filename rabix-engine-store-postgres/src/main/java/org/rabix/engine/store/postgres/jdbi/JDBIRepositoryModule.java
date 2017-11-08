@@ -7,9 +7,21 @@ import org.apache.commons.configuration.Configuration;
 import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.postgresql.jdbc3.Jdbc3PoolingDataSource;
+import org.rabix.engine.store.cache.JobCachedRepository;
 import org.rabix.engine.store.cache.JobRecordCachedRepository;
 import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRecordRepository;
-import org.rabix.engine.store.repository.*;
+import org.rabix.engine.store.postgres.jdbi.impl.JDBIJobRepository;
+import org.rabix.engine.store.repository.AppRepository;
+import org.rabix.engine.store.repository.BackendRepository;
+import org.rabix.engine.store.repository.ContextRecordRepository;
+import org.rabix.engine.store.repository.DAGRepository;
+import org.rabix.engine.store.repository.EventRepository;
+import org.rabix.engine.store.repository.IntermediaryFilesRepository;
+import org.rabix.engine.store.repository.JobRecordRepository;
+import org.rabix.engine.store.repository.JobRepository;
+import org.rabix.engine.store.repository.JobStatsRecordRepository;
+import org.rabix.engine.store.repository.LinkRecordRepository;
+import org.rabix.engine.store.repository.VariableRecordRepository;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.logging.SLF4JLog;
 
@@ -101,8 +113,13 @@ public class JDBIRepositoryModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public JobRepository provideJobRepository(JDBIRepositoryRegistry repositoryRegistry) {
-    return repositoryRegistry.jobRepository();
+  public JobRepository provideJobRepository(JDBIRepositoryRegistry repositoryRegistry, @Named("cached") boolean cached, CacheManager manager) {
+    JDBIJobRepository repo = repositoryRegistry.jobRepository();
+    if (cached) {
+      return new JobCachedRepository(repo, manager);
+    } else {
+      return repo;
+    }
   }
 
   @Provides

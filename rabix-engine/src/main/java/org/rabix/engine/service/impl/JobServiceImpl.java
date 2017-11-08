@@ -29,7 +29,6 @@ import org.rabix.engine.status.EngineStatusCallback;
 import org.rabix.engine.status.EngineStatusCallbackException;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.repository.JobRepository;
-import org.rabix.engine.store.repository.JobRepository.JobEntity;
 import org.rabix.engine.store.repository.TransactionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,11 +107,8 @@ public class JobServiceImpl implements JobService {
           default:
             break;
         }
-
-        jobRepository.updatePartial(job);
         eventProcessor.persist(statusEvent);
         eventProcessor.addToExternalQueue(statusEvent);
-
         return null;
       });
     } catch (Exception e) {
@@ -197,28 +193,7 @@ public class JobServiceImpl implements JobService {
   public void delete(UUID jobId) {
     // TODO think about it
   }
-
-  public void updateBackend(UUID jobId, UUID backendId) {
-    this.jobRepository.updateBackendId(jobId, backendId);
-  }
-
-  @Override
-  public void updateBackends(Set<JobEntity> entities) {
-    this.jobRepository.updateBackendIds(entities.iterator());
-  }
-
-  public Set<UUID> getBackendsByRootId(UUID rootId) {
-    return jobRepository.getBackendsByRootId(rootId);
-  }
-
-  public void dealocateJobs(UUID backendId) {
-    jobRepository.dealocateJobs(backendId);
-  }
-
-  public Set<JobEntity> getReadyFree() {
-    return jobRepository.getReadyFree();
-  }
-
+  
   @Override
   public void handleJobsReady(Set<Job> jobs, UUID rootId, String producedByNode){
     try {
