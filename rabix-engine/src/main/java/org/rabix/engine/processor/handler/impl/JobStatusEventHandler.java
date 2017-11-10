@@ -428,7 +428,7 @@ public class JobStatusEventHandler implements EventHandler<JobStatusEvent> {
       String newJobId = InternalSchemaHelper.concatenateIds(job.getId(), InternalSchemaHelper.getLastPart(node.getId()));   
       JobRecord childJob = jobRecordService.find(newJobId, contextId);
       if(childJob.isReady() && !childJob.isContainer()){
-        JobStatusEvent jobStatusEvent = new JobStatusEvent(childJob.getId(), job.getRootId(), JobRecord.JobState.READY, job.getRootId(), null);
+        JobStatusEvent jobStatusEvent = new JobStatusEvent(childJob.getId(), job.getRootId(), JobRecord.JobState.READY, job.getRootId(), job.getId());
         try {
           eventProcessor.send(jobStatusEvent);
         } catch (EventHandlerException e) {
