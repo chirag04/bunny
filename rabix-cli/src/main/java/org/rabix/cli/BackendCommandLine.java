@@ -410,7 +410,6 @@ public class BackendCommandLine {
       bootstrapService.start();
       Object commonInputs = null;
       try {       
-        inputs = (Map<String, Object>) processInputs(inputs, filePath.getParent());
         commonInputs = bindings.translateToCommon(inputs);
       } catch (BindingException e1) {
         VerboseLogger.log("Failed to translate inputs to the common Rabix format");
@@ -423,7 +422,6 @@ public class BackendCommandLine {
       final Bindings finalBindings = bindings;
       Thread checker = new Thread(new Runnable() {
         @Override
-        @SuppressWarnings("unchecked")
         public void run() {
           ContextRecord contextRecord = contextRecordService.find(job.getId());
           
@@ -469,46 +467,6 @@ public class BackendCommandLine {
       logger.error("Encountered an error while starting local backend.", e);
       System.exit(10);
     }
-  }
-  static String keyPath = "path";
-  static String keyLocation = "location";
-  
-  private static Object processInputs(Object value, Path appLocation) {
-    if (value instanceof FileValue) {
-      FileValue file = ((FileValue) value);
-      Path resolved = appLocation.resolve((String) file.getPath());
-      file.setPath(resolved.toString());
-      file.setLocation(resolved.toUri().toString());
-    }
-
-    if (value instanceof Map<?, ?>) {
-      Map<String, Object> map = (Map<String, Object>) value;
-      if (map.containsKey(keyPath)) {
-        String pathValue = (String) map.get(keyPath);
-        Path resolved = appLocation.resolve(pathValue);
-        map.put(keyPath, resolved.toString());
-      }
-      if (map.containsKey(keyLocation)) {
-        String pathValue = (String) map.get(keyPath);
-        Path resolved;
-        if (pathValue == null) {
-          resolved = appLocation.resolve((String) map.get(keyLocation));
-          map.put(keyPath, resolved.toString());
-        } else {
-          resolved = appLocation.resolve((String) map.get(keyLocation));
-        }
-        map.put(keyLocation, resolved.toUri().toString());
-      }
-      for (Object mapValue : map.values()) {
-        processInputs(mapValue, appLocation);
-      }
-    }
-    if (value instanceof List<?>) {
-      for (Object listValue : ((List<Object>) value)) {
-        processInputs(listValue, appLocation);
-      }
-    }
-    return value;
   }
 
   /**
@@ -611,7 +569,7 @@ public class BackendCommandLine {
   }
   
   private static void printVersionAndExit(Options posixOptions) {
-    System.out.println("Rabix 1.0.1");
+    System.out.println("Rabix 1.0.3");
     System.exit(0);
   }
 
