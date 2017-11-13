@@ -1,23 +1,19 @@
 package org.rabix.bindings.draft3.bean;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.rabix.bindings.draft3.bean.resource.Draft3Resource;
+import org.rabix.bindings.draft3.helper.Draft3BindingHelper;
+import org.rabix.bindings.draft3.helper.Draft3SchemaHelper;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.rabix.bindings.draft3.bean.resource.Draft3Resource;
-import org.rabix.bindings.draft3.helper.Draft3BindingHelper;
-import org.rabix.bindings.draft3.helper.Draft3SchemaHelper;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Draft3Step {
+public class Draft3Step implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -34,17 +30,17 @@ public class Draft3Step {
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatter")
   private Object scatter;
-  
+
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatterMethod")
   private String scatterMethod;
-  
+
   @JsonProperty("hints")
   protected List<Draft3Resource> hints = new ArrayList<>();
-  
+
   @JsonProperty("requirements")
   protected List<Draft3Resource> requirements = new ArrayList<>();
-  
+
   @JsonIgnore
   private Draft3Job job;
 
@@ -103,7 +99,7 @@ public class Draft3Step {
   public String getId() {
     return id;
   }
-  
+
   public void setId(String id) {
     this.id = id;
   }
@@ -123,11 +119,11 @@ public class Draft3Step {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   public List<Draft3Resource> getHints() {
     return hints;
   }

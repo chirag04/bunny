@@ -34,15 +34,16 @@ import org.rabix.engine.store.memory.InMemoryRepositoryModule;
 import org.rabix.engine.store.memory.InMemoryRepositoryRegistry;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryModule;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryRegistry;
+import org.rabix.engine.store.redis.RedisRepositoryModule;
 import org.rabix.engine.store.repository.TransactionHelper;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
 public class EngineModule extends AbstractModule {
-  
+
   ConfigModule config;
-  
+
   public EngineModule(ConfigModule configModule) {
     config = configModule;
   }
@@ -57,10 +58,12 @@ public class EngineModule extends AbstractModule {
     } else if(persistence.equals("IN_MEMORY")) {
       install(new InMemoryRepositoryModule());
       bind(TransactionHelper.class).to(InMemoryRepositoryRegistry.class).in(Scopes.SINGLETON);
+    } else if(persistence.equals("REDIS")) {
+      install(new RedisRepositoryModule(configuration));
     }
-    
+
     bind(CacheService.class).to(CacheServiceImpl.class).in(Scopes.SINGLETON);
-    
+
     bind(DAGCache.class).in(Scopes.SINGLETON);
     bind(DAGNodeService.class).to(DAGNodeServiceImpl.class).in(Scopes.SINGLETON);
     bind(AppService.class).to(AppServiceImpl.class).in(Scopes.SINGLETON);
@@ -78,7 +81,7 @@ public class EngineModule extends AbstractModule {
     bind(OutputEventHandler.class).in(Scopes.SINGLETON);
     bind(JobStatusEventHandler.class).in(Scopes.SINGLETON);
     bind(ContextStatusEventHandler.class).in(Scopes.SINGLETON);
-    
+
     bind(HandlerFactory.class).in(Scopes.SINGLETON);
     bind(EventProcessor.class).to(MultiEventProcessorImpl.class).in(Scopes.SINGLETON);
   }

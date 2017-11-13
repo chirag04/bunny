@@ -1,16 +1,17 @@
 package org.rabix.bindings.draft3.bean;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
 @JsonInclude(Include.NON_NULL)
-public class Draft3Runtime {
+public class Draft3Runtime implements Serializable {
 
   @JsonProperty("cores")
   private final Long cores;
@@ -24,8 +25,8 @@ public class Draft3Runtime {
   private final Long outdirSize;
   @JsonProperty("tmpdirSize")
   private final Long tmpdirSize;
-  
-  
+
+
   @JsonCreator
   public Draft3Runtime(@JsonProperty("cores") Long cores, @JsonProperty("ram") Long ram,
       @JsonProperty("outdir") String outdir, @JsonProperty("tmpdir") String tmpdir,

@@ -40,14 +40,9 @@
 		</dependency>
 		<dependency>
 			<groupId>org.rabix</groupId>
-			<artifactId>rabix-backend-api</artifactId>
+			<artifactId>rabix-engine-store-redis</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!--<dependency>-->
-			<!--<groupId>org.glassfish.jersey.media</groupId>-->
-			<!--<artifactId>jersey-media-json-jackson</artifactId>-->
-			<!--<scope>runtime</scope>-->
-		<!--</dependency>-->
 		<dependency>
 			<groupId>org.rabix</groupId>
 			<artifactId>rabix-bindings-cwl</artifactId>

@@ -1,13 +1,11 @@
 package org.rabix.bindings.model;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.rabix.bindings.BindingException;
 import org.rabix.bindings.BindingsFactory;
 import org.rabix.bindings.helper.URIHelper;
@@ -15,33 +13,22 @@ import org.rabix.common.helper.JSONHelper;
 import org.rabix.common.json.BeanPropertyView;
 import org.rabix.common.json.BeanSerializer;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.*;
 
 @JsonDeserialize(using=Application.ApplicationDeserializer.class)
-public abstract class Application {
+public abstract class Application implements Serializable {
 
   @JsonIgnore
   public abstract ApplicationPort getInput(String name);
-  
+
   @JsonIgnore
   public abstract ApplicationPort getOutput(String name);
-  
+
   @JsonIgnore
   public abstract List<? extends ApplicationPort> getInputs();
-  
+
   @JsonIgnore
   public abstract List<? extends ApplicationPort> getOutputs();
 
@@ -50,7 +37,7 @@ public abstract class Application {
 
   @JsonIgnore
   public abstract ValidationReport validate();
-  
+
   @JsonProperty("appFileLocation")
   @JsonView(BeanPropertyView.Full.class)
   protected String appFileLocation;
@@ -62,9 +49,9 @@ public abstract class Application {
   public void setAppFileLocation(String appFileLocation) {
     this.appFileLocation = appFileLocation;
   }
-  
+
   protected Map<String, Object> raw = new HashMap<>();
-  
+
   @JsonAnySetter
   public void add(String key, Object value) {
     raw.put(key, value);
@@ -79,9 +66,9 @@ public abstract class Application {
   public Object getProperty(String key) {
     return raw.get(key);
   }
-  
+
   @JsonIgnore
-  public String serialize() { 
+  public String serialize() {
     return BeanSerializer.serializePartial(this);
   }
   /**
@@ -156,7 +143,7 @@ public abstract class Application {
       }
     }
   }
-  
+
   public static class ApplicationSerializer extends JsonSerializer<Application> {
     @Override
     public void serialize(Application value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {

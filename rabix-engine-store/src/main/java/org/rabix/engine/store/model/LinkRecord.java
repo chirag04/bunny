@@ -1,28 +1,29 @@
 package org.rabix.engine.store.model;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 import org.rabix.engine.store.cache.Cachable;
 import org.rabix.engine.store.cache.CacheKey;
 
-public class LinkRecord extends TimestampedModel implements Cachable {
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public class LinkRecord extends TimestampedModel implements Cachable, Serializable {
 
   public final static String CACHE_NAME = "LINK_RECORD";
-  
+
   private UUID rootId;
-  
+
   private String sourceJobId;
   private String sourceJobPort;
   private LinkPortType sourceVarType;
-  
+
   private String destinationJobId;
   private String destinationJobPort;
   private LinkPortType destinationVarType;
 
   private Integer position;
-  
+
   public LinkRecord(UUID rootId, String sourceJobId, String sourceJobPort, LinkPortType sourceVarType, String destinationJobId, String destinationJobPort, LinkPortType destinationVarType, Integer position) {
     this(rootId, sourceJobId, sourceJobPort, sourceVarType, destinationJobId, destinationJobPort, destinationVarType, position, LocalDateTime.now(), LocalDateTime.now());
   }
@@ -42,59 +43,35 @@ public class LinkRecord extends TimestampedModel implements Cachable {
   public UUID getRootId() {
     return rootId;
   }
-  
+
   public Integer getPosition() {
     return position;
   }
-  
+
   public String getSourceJobId() {
     return sourceJobId;
-  }
-
-  public void setSourceJobId(String sourceJobId) {
-    this.sourceJobId = sourceJobId;
   }
 
   public String getSourceJobPort() {
     return sourceJobPort;
   }
 
-  public void setSourceJobPort(String sourceJobPort) {
-    this.sourceJobPort = sourceJobPort;
-  }
-
   public LinkPortType getSourceVarType() {
     return sourceVarType;
-  }
-
-  public void setSourceVarType(LinkPortType sourceVarType) {
-    this.sourceVarType = sourceVarType;
   }
 
   public String getDestinationJobId() {
     return destinationJobId;
   }
 
-  public void setDestinationJobId(String destinationJobId) {
-    this.destinationJobId = destinationJobId;
-  }
-
   public String getDestinationJobPort() {
     return destinationJobPort;
-  }
-
-  public void setDestinationJobPort(String destinationJobPort) {
-    this.destinationJobPort = destinationJobPort;
   }
 
   public LinkPortType getDestinationVarType() {
     return destinationVarType;
   }
 
-  public void setDestinationVarType(LinkPortType destinationVarType) {
-    this.destinationVarType = destinationVarType;
-  }
-  
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -164,19 +141,19 @@ public class LinkRecord extends TimestampedModel implements Cachable {
   public String getCacheEntityName() {
     return CACHE_NAME;
   }
-  
+
   public static class LinkRecordCacheKey implements CacheKey {
 
     public final UUID rootId;
-    
+
     public final String sourceJobId;
     public final String sourceJobPort;
     public final LinkPortType sourceVarType;
-    
+
     public final String destinationJobId;
     public final String destinationJobPort;
     public final LinkPortType destinationVarType;
-    
+
     public LinkRecordCacheKey(UUID rootId, String sourceJobId, String sourceJobPort, LinkPortType sourceVarType, String destinationJobId, String destinationJobPort, LinkPortType destinationVarType) {
       this.rootId = rootId;
       this.sourceJobId = sourceJobId;
@@ -226,7 +203,7 @@ public class LinkRecord extends TimestampedModel implements Cachable {
       }
       return false;
     }
-    
+
   }
-  
+
 }

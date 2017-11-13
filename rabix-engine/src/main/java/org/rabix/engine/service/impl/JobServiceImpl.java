@@ -1,12 +1,6 @@
 package org.rabix.engine.service.impl;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.inject.Inject;
 import org.apache.commons.configuration.Configuration;
 import org.rabix.bindings.Bindings;
 import org.rabix.bindings.BindingsFactory;
@@ -19,16 +13,7 @@ import org.rabix.engine.event.Event;
 import org.rabix.engine.event.impl.InitEvent;
 import org.rabix.engine.event.impl.JobStatusEvent;
 import org.rabix.engine.processor.EventProcessor;
-import org.rabix.engine.service.AppService;
-import org.rabix.engine.service.ContextRecordService;
-import org.rabix.engine.service.DAGNodeService;
-import org.rabix.engine.service.IntermediaryFilesService;
-import org.rabix.engine.service.JobRecordService;
-import org.rabix.engine.service.JobService;
-import org.rabix.engine.service.JobServiceException;
-import org.rabix.engine.service.LinkRecordService;
-import org.rabix.engine.service.SchedulerService;
-import org.rabix.engine.service.VariableRecordService;
+import org.rabix.engine.service.*;
 import org.rabix.engine.status.EngineStatusCallback;
 import org.rabix.engine.status.EngineStatusCallbackException;
 import org.rabix.engine.store.model.JobRecord;
@@ -39,14 +24,19 @@ import org.rabix.engine.validator.JobStateValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JobServiceImpl implements JobService {
 
   private static final long FREE_RESOURCES_WAIT_TIME = 3000L;
-  
+
   private final static Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
-  
+
   private final JobRecordService jobRecordService;
   private final LinkRecordService linkRecordService;
   private final VariableRecordService variableRecordService;
@@ -55,10 +45,10 @@ public class JobServiceImpl implements JobService {
   private final JobRepository jobRepository;
   private final DAGNodeService dagNodeService;
   private final AppService appService;
-  
+
   private final EventProcessor eventProcessor;
   private final SchedulerService scheduler;
-  
+
   private final TransactionHelper transactionHelper;
 
   private boolean deleteFilesUponExecution;
@@ -67,13 +57,13 @@ public class JobServiceImpl implements JobService {
   private boolean isLocalBackend;
 
   private IntermediaryFilesService intermediaryFilesService;
-  
+
   private Set<UUID> stoppingRootIds = new HashSet<>();
   private EngineStatusCallback engineStatusCallback;
   private boolean setResources;
 
   private JobHelper jobHelper;
-  
+
   @Inject
   public JobServiceImpl(EventProcessor eventProcessor, JobRecordService jobRecordService,
       VariableRecordService variableRecordService, LinkRecordService linkRecordService,
@@ -100,7 +90,7 @@ public class JobServiceImpl implements JobService {
     keepInputFiles = !configuration.getBoolean("engine.treat_inputs_as_intermediary", false) || !deleteIntermediaryFiles;
     setResources = configuration.getBoolean("engine.set_resources", false);
   }
-  
+
   @Override
   public void update(Job job) throws JobServiceException {
     logger.debug("Update Job {}", job.getId());
@@ -115,8 +105,8 @@ public class JobServiceImpl implements JobService {
             if (backendId == null) {
               logger.warn("Tried to update Job " + job.getId() + " without backend assigned.");
               return null;
-            }  
-            
+            }
+
             JobStatus dbStatus = jobRepository.getStatus(job.getId());
             JobStateValidator.checkState(JobHelper.transformStatus(dbStatus), JobHelper.transformStatus(job.getStatus()));
           }
@@ -176,7 +166,7 @@ public class JobServiceImpl implements JobService {
       logger.error("Failed to update Job " + job.getName() + " and root ID " + job.getRootId(), e);
     }
   }
-  
+
   @Override
   public Job start(final Job job, Map<String, Object> config) throws JobServiceException {
     logger.debug("Start Job {}", job);
@@ -190,7 +180,7 @@ public class JobServiceImpl implements JobService {
           UUID rootId = job.getRootId();
           if (rootId == null)
             rootId = UUID.randomUUID();
-          
+
           Job updatedJob = Job.cloneWithIds(job, rootId, rootId);
           updatedJob = Job.cloneWithName(updatedJob, InternalSchemaHelper.ROOT_NAME);
 
@@ -201,7 +191,7 @@ public class JobServiceImpl implements JobService {
           appService.loadDB(node);
           String dagHash = dagNodeService.put(node, rootId);
 
-          
+
           updatedJob = Job.cloneWithStatus(updatedJob, JobStatus.RUNNING);
           updatedJob = Job.cloneWithConfig(updatedJob, config);
           jobRepository.insert(updatedJob, null, null);
@@ -224,10 +214,10 @@ public class JobServiceImpl implements JobService {
       throw new JobServiceException("Failed to create Bindings", e);
     }
   }
-  
+
   public void stop(Job job) throws JobServiceException {
     logger.debug("Stop Job {}", job.getId());
-    
+
     if (job.isRoot()) {
       Set<JobStatus> statuses = new HashSet<>();
       statuses.add(JobStatus.READY);
@@ -244,31 +234,27 @@ public class JobServiceImpl implements JobService {
     }
     logger.info("Job {} rootId: {} stopped", job.getName(), job.getRootId());
   }
-  
+
   @Override
   public void stop(UUID id) throws JobServiceException {
     Job job = jobRepository.get(id);
     stop(job);
   }
-  
+
   @Override
   public Set<Job> getReady(EventProcessor eventProcessor, UUID rootId) throws JobServiceException {
     return jobHelper.createReadyJobs(rootId, setResources);
   }
-  
+
   @Override
   public Job get(UUID id) {
     return jobRepository.get(id);
   }
-  
+
   public void delete(UUID jobId) {
     // TODO think about it
   }
 
-  public void updateBackend(UUID jobId, UUID backendId) {
-    this.jobRepository.updateBackendId(jobId, backendId);
-  }
-  
   @Override
   public void updateBackends(Set<JobEntity> entities) {
     this.jobRepository.updateBackendIds(entities.iterator());
@@ -281,7 +267,7 @@ public class JobServiceImpl implements JobService {
   public void dealocateJobs(UUID backendId) {
     jobRepository.dealocateJobs(backendId);
   }
-  
+
   public Set<JobEntity> getReadyFree() {
     return jobRepository.getReadyFree();
   }
@@ -383,7 +369,7 @@ public class JobServiceImpl implements JobService {
       logger.error("Engine status callback failed",e);
     }
   }
-  
+
   @Override
   public void handleJobRootAborted(Job rootJob) {
     logger.info("Root {} has been aborted", rootJob.getId());

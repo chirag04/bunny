@@ -1,13 +1,14 @@
 package org.rabix.bindings.cwl.bean;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CWLRuntime {
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+public class CWLRuntime implements Serializable {
 
   @JsonProperty("cores")
   private final Long cores;
@@ -21,7 +22,7 @@ public class CWLRuntime {
   private final Long outdirSize;
   @JsonProperty("tmpdirSize")
   private final Long tmpdirSize;
-  
+
   @JsonCreator
   public CWLRuntime(@JsonProperty("cores") Long cores, @JsonProperty("ram") Long ram,
       @JsonProperty("outdir") String outdir, @JsonProperty("tmpdir") String tmpdir,
@@ -129,5 +130,5 @@ public class CWLRuntime {
   public String toString() {
     return "CWLRuntime [cores=" + cores + ", memMB=" + ram + ", outdir=" + outdir + ", tmpdir=" + tmpdir + ", outdirSize=" + outdirSize + ", tmpdirSize=" + tmpdirSize + "]";
   }
-  
+
 }

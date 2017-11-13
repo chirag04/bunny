@@ -5,13 +5,15 @@ import org.rabix.bindings.model.LinkMerge;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DAGLinkPort {
+import java.io.Serializable;
+
+public class DAGLinkPort implements Serializable {
 
   public static enum LinkPortType {
     INPUT,
     OUTPUT
   }
-  
+
   @JsonProperty("id")
   private String id;
   @JsonProperty("dagNodeId")
@@ -24,9 +26,9 @@ public class DAGLinkPort {
   private Object defaultValue;
   @JsonProperty("transform")
   private Object transform;
-  
+
   private LinkMerge linkMerge;
-    
+
   @JsonCreator
   public DAGLinkPort(@JsonProperty("id") String id,
                      @JsonProperty("dagNodeId") String dagNodeId,
@@ -43,7 +45,7 @@ public class DAGLinkPort {
     this.defaultValue = defaultValue;
     this.transform = transform;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -51,11 +53,11 @@ public class DAGLinkPort {
   public boolean isScatter() {
     return scatter;
   }
-  
+
   public void setScatter(boolean scatter) {
     this.scatter = scatter;
   }
-  
+
   public String getDagNodeId() {
     return dagNodeId;
   }
@@ -63,27 +65,27 @@ public class DAGLinkPort {
   public LinkMerge getLinkMerge() {
     return linkMerge;
   }
-  
+
   public void setLinkMerge(LinkMerge linkMerge) {
     this.linkMerge = linkMerge;
   }
-  
+
   public LinkPortType getType() {
     return type;
   }
-  
+
   public Object getDefaultValue() {
     return defaultValue;
   }
-  
+
   public void setDefaultValue(Object defaultValue) {
     this.defaultValue = defaultValue;
   }
-  
+
   public Object getTransform() {
     return transform;
   }
-  
+
   public void setTransform(Object transform) {
     this.transform = transform;
   }
@@ -123,5 +125,5 @@ public class DAGLinkPort {
   public String toString() {
     return "DAGLinkPort [id=" + id + ", dagNodeId=" + dagNodeId + ", type=" + type + ", scatter=" + scatter + ", default=" + defaultValue + ", transform=" + transform + ", linkMerge=" + linkMerge + "]";
   }
-  
+
 }

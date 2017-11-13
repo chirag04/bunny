@@ -1,25 +1,13 @@
 package org.rabix.bindings.draft2.bean.resource;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import org.rabix.bindings.draft2.bean.resource.requirement.*;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2CreateFileRequirement;
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2DockerResource;
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2EnvVarRequirement;
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2ExpressionEngineRequirement;
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2IORequirement;
-import org.rabix.bindings.draft2.bean.resource.requirement.Draft2SchemaDefRequirement;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeId;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "class", defaultImpl = Draft2Resource.class, visible = true)
 @JsonSubTypes({ @Type(value = Draft2DockerResource.class, name = "DockerRequirement"),
@@ -31,8 +19,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @Type(value = Draft2MemoryResource.class, name = "sbg:MemRequirement"),
     @Type(value = Draft2CpuResource.class, name = "sbg:CPURequirement") })
 @JsonInclude(Include.NON_NULL)
-public class Draft2Resource {
-  
+public class Draft2Resource implements Serializable {
+
   @JsonProperty("class")
   protected String type;
   protected Map<String, Object> raw = new HashMap<>();
@@ -65,7 +53,7 @@ public class Draft2Resource {
   public Draft2ResourceType getTypeEnum() {
     return Draft2ResourceType.OTHER;
   }
-  
+
   @JsonTypeId
   public String getType() {
     return type;
@@ -100,5 +88,5 @@ public class Draft2Resource {
   public String toString() {
     return "Draft2Resource [type=" + type + ", raw=" + raw + "]";
   }
-  
+
 }

@@ -1,21 +1,22 @@
 package org.rabix.engine.store.model.scatter;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class RowMapping {
+public class RowMapping implements Serializable {
 
   private final int row;
   private final List<PortMapping> portMappings;
-  
+
   public RowMapping(int row, List<PortMapping> portMappings) {
     this.row = row;
     this.portMappings = portMappings;
   }
-  
+
   public int getIndex() {
     return row;
   }
-  
+
   public Object getValue(String portId) {
     for (PortMapping portMapping : portMappings) {
       if (portMapping.getPortId().equals(portId)) {
@@ -24,7 +25,7 @@ public class RowMapping {
     }
     return null;
   }
-  
+
   public List<PortMapping> getPortMappings() {
     return portMappings;
   }
@@ -33,5 +34,5 @@ public class RowMapping {
   public String toString() {
     return "RowMapping [row=" + row + ", portMappings=" + portMappings + "]";
   }
-  
+
 }

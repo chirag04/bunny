@@ -5,10 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
 import java.util.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DataType {
+public class DataType implements Serializable {
   public enum Type {
     UNION, ARRAY, RECORD, ENUM, MAP, FILE(null, "File"), DIRECTORY(null, "Directory"), ANY(null, "any"),
     NULL(null, "null"), EMPTY,

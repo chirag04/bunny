@@ -1,11 +1,10 @@
 package org.rabix.bindings.model.dag;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.rabix.bindings.ProtocolType;
 import org.rabix.bindings.model.Application;
 import org.rabix.bindings.model.Application.ApplicationDeserializer;
@@ -14,30 +13,22 @@ import org.rabix.bindings.model.LinkMerge;
 import org.rabix.bindings.model.ScatterMethod;
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
+import java.util.*;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({ 
+@JsonSubTypes({
     @Type(value = DAGNode.class, name = "EXECUTABLE"),
     @Type(value = DAGContainer.class, name = "CONTAINER")})
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DAGNode {
+public class DAGNode implements Serializable {
 
   public static enum DAGNodeType {
     EXECUTABLE,
     CONTAINER
   }
-  
+
   @JsonProperty("id")
   protected String id;
   @JsonDeserialize(using = ApplicationDeserializer.class)
@@ -52,13 +43,13 @@ public class DAGNode {
   protected List<DAGLinkPort> inputPorts = new ArrayList<>();
   @JsonProperty("outputPorts")
   protected List<DAGLinkPort> outputPorts = new ArrayList<>();
-  
+
   @JsonProperty("defaults")
   protected Map<String, Object> defaults;
-  
+
   @JsonProperty("protocolType")
   protected ProtocolType protocolType;
-  
+
   @JsonCreator
   public DAGNode(@JsonProperty("id") String id,
                  @JsonProperty("inputPorts") List<DAGLinkPort> inputPorts,
@@ -80,19 +71,19 @@ public class DAGNode {
   public String getId() {
     return id;
   }
-  
+
   public Application getApp() {
     return app;
   }
-  
+
   public void setApp(Application app) {
     this.app = app;
   }
-  
+
   public String getAppHash() {
     return appHash;
   }
-  
+
   public void setAppHash(String appHash) {
     this.appHash = appHash;
   }
@@ -104,11 +95,11 @@ public class DAGNode {
   public List<DAGLinkPort> getOutputPorts() {
     return outputPorts;
   }
-  
+
   public ScatterMethod getScatterMethod() {
     return scatterMethod;
   }
-  
+
   public ProtocolType getProtocolType() {
     return protocolType;
   }
@@ -134,10 +125,10 @@ public class DAGNode {
     }
     return null;
   }
-  
+
   public Set<LinkMerge> getLinkMergeSet(LinkPortType linkPortType) {
     Set<LinkMerge> linkMergeSet = new HashSet<>();
-    
+
     switch (linkPortType) {
     case INPUT:
       for (DAGLinkPort inputPort : inputPorts) {
@@ -154,11 +145,11 @@ public class DAGNode {
     }
     return linkMergeSet;
   }
-  
+
   public Map<String, Object> getDefaults() {
     return defaults;
   }
-  
+
   public DAGNodeType getType() {
     return DAGNodeType.EXECUTABLE;
   }

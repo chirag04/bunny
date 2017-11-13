@@ -1,43 +1,44 @@
 package org.rabix.engine.store.model.scatter;
 
-import java.util.List;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.UUID;
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public interface ScatterStrategy {
+public interface ScatterStrategy extends Serializable {
 
   void enable(String port, Object value, Integer position, Integer sizePerPort) throws ScatterStrategyException;
 
   void commit(List<RowMapping> mappings);
-  
+
   int enabledCount();
-  
+
   boolean isBlocking();
-  
+
   List<RowMapping> enabled() throws ScatterStrategyException;
-  
+
   List<Object> valueStructure(String jobId, String portId, UUID rootId);
-  
+
   void setEmptyListDetected();
-  
+
   boolean isEmptyListDetected();
-  
+
   boolean isHanging();
-  
+
   Object generateOutputsForEmptyList();
-  
+
   void skipScatter(boolean skip);
-  
+
   boolean skipScatter();
 
-  public class JobPortPair {
+  public class JobPortPair implements Serializable {
     private String jobId;
     private String portId;
 
@@ -45,11 +46,11 @@ public interface ScatterStrategy {
       this.jobId = jobId;
       this.portId = portId;
     }
-    
+
     public String getJobId() {
       return jobId;
     }
-    
+
     public String getPortId() {
       return portId;
     }
@@ -59,5 +60,5 @@ public interface ScatterStrategy {
       return "JobPortPair [jobId=" + jobId + ", portId=" + portId + "]";
     }
   }
-  
+
 }

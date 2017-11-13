@@ -1,24 +1,20 @@
 package org.rabix.bindings.sb.bean;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.rabix.bindings.sb.bean.resource.SBResource;
 import org.rabix.bindings.sb.bean.resource.SBResourceType;
 import org.rabix.bindings.sb.helper.SBBindingHelper;
 import org.rabix.bindings.sb.helper.SBSchemaHelper;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SBStep {
+public class SBStep implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -35,14 +31,14 @@ public class SBStep {
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatter")
   private Object scatter;
-  
+
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatterMethod")
   private String scatterMethod;
-  
+
   @JsonIgnore
   private SBJob job;
-  
+
   @JsonProperty("hints")
   private List<SBResource> hints = new ArrayList<>();
   @JsonProperty("requirements")
@@ -123,7 +119,7 @@ public class SBStep {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
@@ -132,7 +128,7 @@ public class SBStep {
   public SBJob getJob() {
     return job;
   }
-  
+
   public List<SBResource> getRequirements() {
     return requirements;
   }
@@ -144,7 +140,7 @@ public class SBStep {
   public void setHints(List<SBResource> hints) {
     this.hints = hints;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -157,7 +153,7 @@ public class SBStep {
     result = prime * result + ((scatter == null) ? 0 : scatter.hashCode());
     return result;
   }
-  
+
   @JsonIgnore
   private <T extends SBResource> List<T> getRequirements(SBResourceType type, Class<T> clazz) {
     if (requirements == null) {

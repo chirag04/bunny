@@ -1,8 +1,12 @@
 package org.rabix.engine.store.model;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.io.Serializable;
 import java.util.UUID;
 
-public class JobStatsRecord {
+public class JobStatsRecord implements Serializable {
 
   private UUID rootId;
   private int completed;
@@ -15,7 +19,7 @@ public class JobStatsRecord {
     this.running = running;
     this.total = total;
   }
-  
+
   public UUID getRootId() {
     return rootId;
   }
@@ -52,6 +56,39 @@ public class JobStatsRecord {
   }
   public void increaseCompleted() {
     completed++;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (!(obj instanceof JobStatsRecord)) {
+      return false;
+    }
+
+    if (obj == this) {
+      return true;
+    }
+
+    JobStatsRecord other = (JobStatsRecord) obj;
+    return new EqualsBuilder()
+            .append(rootId, other.rootId)
+            .append(completed, other.completed)
+            .append(running, other.running)
+            .append(total, other.total)
+            .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+            .append(rootId)
+            .append(completed)
+            .append(running)
+            .append(total)
+            .hashCode();
   }
 
   @Override public String toString() {

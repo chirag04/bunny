@@ -1,26 +1,13 @@
 package org.rabix.bindings.draft3.bean.resource;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import org.rabix.bindings.draft3.bean.resource.requirement.*;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3CreateFileRequirement;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3DockerResource;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3EnvVarRequirement;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3InlineJavascriptRequirement;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3ResourceRequirement;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3SchemaDefRequirement;
-import org.rabix.bindings.draft3.bean.resource.requirement.Draft3ShellCommandRequirement;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeId;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "class", defaultImpl = Draft3Resource.class, visible = true)
 @JsonSubTypes({ @Type(value = Draft3DockerResource.class, name = "DockerRequirement"),
@@ -31,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @Type(value = Draft3CreateFileRequirement.class, name = "CreateFileRequirement"),
     @Type(value = Draft3EnvVarRequirement.class, name = "EnvVarRequirement") })
 @JsonInclude(Include.NON_NULL)
-public class Draft3Resource {
+public class Draft3Resource  implements Serializable {
 
   @JsonProperty("class")
   protected String type;
@@ -65,7 +52,7 @@ public class Draft3Resource {
   public Draft3ResourceType getTypeEnum() {
     return Draft3ResourceType.OTHER;
   }
-  
+
   @JsonTypeId
   public String getType() {
     return type;

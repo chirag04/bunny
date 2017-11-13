@@ -1,37 +1,31 @@
 package org.rabix.bindings.model;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.rabix.bindings.helper.FileValueHelper;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.rabix.bindings.helper.FileValueHelper;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class ApplicationPort {
+public abstract class ApplicationPort implements Serializable {
 
   public static final String KEY_SCHEMA = "type";
 
   @JsonProperty("id")
   protected String id;
-  
+
   @JsonProperty("default")
   protected Object defaultValue;
-  
+
   @JsonProperty("type")
   protected Object schema;
-  
+
   @JsonProperty("scatter")
   protected Boolean scatter;
-  
+
   @JsonProperty("linkMerge")
   protected String linkMerge;
 
@@ -99,11 +93,11 @@ public abstract class ApplicationPort {
   public void setDefaultValue(Object defaultValue) {
     this.defaultValue = defaultValue;
   }
-  
+
   public String getLinkMerge() {
     return linkMerge;
   }
-  
+
   public void setLinkMerge(String linkMerge) {
     this.linkMerge = linkMerge;
   }
@@ -127,7 +121,7 @@ public abstract class ApplicationPort {
   public boolean isRequired() {
     return false;
   }
-  
+
   public abstract Object getBinding();
   /**
    * Checks if supplied value is valid for this ApplicationPort

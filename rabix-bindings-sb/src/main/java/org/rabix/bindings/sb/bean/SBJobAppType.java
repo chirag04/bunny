@@ -1,6 +1,8 @@
 package org.rabix.bindings.sb.bean;
 
-public enum SBJobAppType {
+import java.io.Serializable;
+
+public enum SBJobAppType implements Serializable {
 
   WORKFLOW,
   COMMAND_LINE_TOOL,

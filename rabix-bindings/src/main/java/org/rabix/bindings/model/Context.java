@@ -1,11 +1,12 @@
 package org.rabix.bindings.model;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Context {
+import java.io.Serializable;
+import java.util.Map;
+
+public class Context implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -17,11 +18,11 @@ public class Context {
     this.id = id;
     this.config = config;
   }
-  
+
   public void setId(String id) {
     this.id = id;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -29,7 +30,7 @@ public class Context {
   public void setConfig(Map<String, Object> config) {
     this.config = config;
   }
-  
+
   public Map<String, Object> getConfig() {
     return config;
   }

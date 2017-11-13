@@ -1,23 +1,19 @@
 package org.rabix.bindings.draft3.bean;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.rabix.bindings.draft3.Draft3JobProcessor;
 import org.rabix.bindings.draft3.helper.Draft3SchemaHelper;
 import org.rabix.common.json.BeanPropertyView;
 import org.rabix.common.json.processor.BeanProcessorClass;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
+import java.io.Serializable;
+import java.util.Map;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @BeanProcessorClass(name = Draft3JobProcessor.class)
-public final class Draft3Job {
+public final class Draft3Job implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -34,11 +30,11 @@ public final class Draft3Job {
   @JsonProperty("scatter")
   @JsonView(BeanPropertyView.Full.class)
   private Object scatter;
-  
+
   @JsonProperty("scatterMethod")
   @JsonView(BeanPropertyView.Full.class)
   private String scatterMethod;
-  
+
   @JsonProperty("runtime")
   private Draft3Runtime runtime;
 
@@ -47,7 +43,7 @@ public final class Draft3Job {
       @JsonProperty("inputs") Map<String, Object> inputs,
       @JsonProperty("outputs") Map<String, Object> outputs,
       @JsonProperty("runtime") Draft3Runtime runtime,
-      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter, 
+      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter,
       @JsonProperty("scatterMethod") String scatterMethod) {
     this.id = id;
     this.app = app;
@@ -58,7 +54,7 @@ public final class Draft3Job {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   private void processPortDefaults() {
     if (inputs == null) {
       return;
@@ -80,7 +76,7 @@ public final class Draft3Job {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   public Draft3Job(String id, Draft3JobApp app, Map<String, Object> inputs, Map<String, Object> outputs) {
     this.id = id;
     this.app = app;
@@ -92,11 +88,11 @@ public final class Draft3Job {
   public boolean isInlineJavascriptEnabled() {
     return app.getInlineJavascriptRequirement() != null;
   }
-  
+
   public boolean isShellCommandEscapeEnabled() {
     return app.getShellCommandRequirement() != null;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -116,11 +112,11 @@ public final class Draft3Job {
   public Map<String, Object> getOutputs() {
     return outputs;
   }
-  
+
   public void setRuntime(Draft3Runtime runtime) {
     this.runtime = runtime;
   }
-  
+
   public Draft3Runtime getRuntime() {
     return runtime;
   }
@@ -128,11 +124,11 @@ public final class Draft3Job {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj)
@@ -168,5 +164,5 @@ public final class Draft3Job {
   public String toString() {
     return "Job [id=" + id + ", app=" + app + ", inputs=" + inputs + ", outputs=" + outputs + ", scatter=" + scatter + ", resources=" + runtime + "]";
   }
-  
+
 }

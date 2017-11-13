@@ -1,33 +1,26 @@
 package org.rabix.engine.store.model.scatter.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import org.rabix.bindings.model.ScatterMethod;
 import org.rabix.bindings.model.dag.DAGLinkPort;
 import org.rabix.bindings.model.dag.DAGNode;
 import org.rabix.common.helper.InternalSchemaHelper;
-import org.rabix.engine.store.model.scatter.RowMapping;
-import org.rabix.engine.store.model.scatter.ScatterStrategyException;
 import org.rabix.engine.store.model.scatter.PortMapping;
+import org.rabix.engine.store.model.scatter.RowMapping;
 import org.rabix.engine.store.model.scatter.ScatterStrategy;
+import org.rabix.engine.store.model.scatter.ScatterStrategyException;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
+import java.io.Serializable;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class ScatterZipStrategy implements ScatterStrategy {
 
   @JsonProperty("combinations")
   private LinkedList<Combination> combinations;
-  
+
   @JsonProperty("values")
   private Map<String, LinkedList<Object>> values;
   @JsonProperty("indexes")
@@ -35,13 +28,13 @@ public class ScatterZipStrategy implements ScatterStrategy {
 
   @JsonProperty("scatterMethod")
   private ScatterMethod scatterMethod;
-  
+
   @JsonProperty("emptyListDetected")
   private Boolean emptyListDetected;
-  
+
   @JsonProperty("skipScatter")
   private Boolean skipScatter;
-  
+
   @JsonCreator
   public ScatterZipStrategy(@JsonProperty("combinations") LinkedList<Combination> combinations,
       @JsonProperty("values") Map<String, LinkedList<Object>> values,
@@ -61,13 +54,13 @@ public class ScatterZipStrategy implements ScatterStrategy {
     values = new HashMap<>();
     indexes = new HashMap<>();
     combinations = new LinkedList<>();
-    
+
     this.scatterMethod = dagNode.getScatterMethod();
     this.emptyListDetected = false;
     this.skipScatter = false;
     initialize(dagNode);
   }
-  
+
   public void initialize(DAGNode dagNode) {
     for(DAGLinkPort port : dagNode.getInputPorts()) {
       if (port.isScatter()) {
@@ -76,11 +69,11 @@ public class ScatterZipStrategy implements ScatterStrategy {
       }
     }
   }
-  
+
   public void enable(String port, Object value, Integer position, Integer sizePerPort) throws ScatterStrategyException {
     Preconditions.checkNotNull(port);
     Preconditions.checkNotNull(position);
-    
+
     List<Object> valueList = values.get(port);
     List<Boolean> indexList = indexes.get(port);
 
@@ -92,7 +85,7 @@ public class ScatterZipStrategy implements ScatterStrategy {
     indexList.set(position - 1, true);
     valueList.set(position - 1, value);
   }
-  
+
   private <T> void expand(List<T> list, Integer position) {
     int initialSize = list.size();
     if (initialSize >= position) {
@@ -170,13 +163,13 @@ public class ScatterZipStrategy implements ScatterStrategy {
       }
     }
   }
-  
+
   @Override
   public int enabledCount() {
     return combinations.size();
   }
 
-  public static class Combination {
+  public static class Combination implements Serializable {
     @JsonProperty("position")
     int position;
     @JsonProperty("enabled")
@@ -205,7 +198,7 @@ public class ScatterZipStrategy implements ScatterStrategy {
         return o1.position - o2.position;
       }
     });
-    
+
     LinkedList<Object> result = new LinkedList<>();
     for (Combination combination : combinations) {
       String scatteredJobId = InternalSchemaHelper.scatterId(jobId, combination.position);
@@ -213,7 +206,7 @@ public class ScatterZipStrategy implements ScatterStrategy {
     }
     return result;
   }
-  
+
   @Override
   public boolean isHanging() {
     for (String port : values.keySet()) {
@@ -233,7 +226,7 @@ public class ScatterZipStrategy implements ScatterStrategy {
   public void setEmptyListDetected() {
     this.emptyListDetected = true;
   }
-  
+
   @Override
   public boolean isEmptyListDetected() {
     return emptyListDetected;

@@ -9,8 +9,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 
+import java.io.Serializable;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CWLDataLink {
+public class CWLDataLink implements Serializable {
 
   @JsonProperty("source")
   private String source;
@@ -23,10 +25,10 @@ public class CWLDataLink {
 
   @JsonIgnore
   private Boolean scattered;
-  
+
   @JsonProperty("linkMerge")
   private LinkMerge linkMerge;
-  
+
   @JsonProperty("outputSource")
   @JsonView(BeanPropertyView.Full.class)
   private boolean isOutputSource;
@@ -46,7 +48,7 @@ public class CWLDataLink {
   public boolean isOutputSource() {
     return isOutputSource;
   }
-  
+
   public String getSource() {
     return source;
   }
@@ -54,11 +56,11 @@ public class CWLDataLink {
   public void setSource(String source) {
     this.source = source;
   }
-  
+
   public LinkMerge getLinkMerge() {
     return linkMerge;
   }
-  
+
   public void setLinkMerge(LinkMerge linkMerge) {
     this.linkMerge = linkMerge;
   }

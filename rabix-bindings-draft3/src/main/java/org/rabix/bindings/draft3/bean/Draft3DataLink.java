@@ -7,8 +7,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Draft3DataLink {
+public class Draft3DataLink implements Serializable {
 
   @JsonProperty("source")
   private String source;
@@ -21,10 +23,10 @@ public class Draft3DataLink {
 
   @JsonIgnore
   private Boolean scattered;
-  
+
   @JsonProperty("linkMerge")
   private LinkMerge linkMerge;
-  
+
   @JsonProperty("outputSource")
   private boolean isOutputSource;
 
@@ -44,7 +46,7 @@ public class Draft3DataLink {
   public boolean isOutputSource() {
     return isOutputSource;
   }
-  
+
   public String getSource() {
     return source;
   }
@@ -52,11 +54,11 @@ public class Draft3DataLink {
   public void setSource(String source) {
     this.source = source;
   }
-  
+
   public LinkMerge getLinkMerge() {
     return linkMerge;
   }
-  
+
   public void setLinkMerge(LinkMerge linkMerge) {
     this.linkMerge = linkMerge;
   }

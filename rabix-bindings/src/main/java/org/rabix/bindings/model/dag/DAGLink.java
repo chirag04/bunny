@@ -5,13 +5,15 @@ import org.rabix.bindings.model.LinkMerge;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DAGLink {
+import java.io.Serializable;
+
+public class DAGLink implements Serializable {
 
   @JsonProperty("source")
   private final DAGLinkPort source;
   @JsonProperty("destination")
   private final DAGLinkPort destination;
-  
+
   @JsonProperty("position")
   private final Integer position;
   @JsonProperty("linkMerge")
@@ -28,11 +30,11 @@ public class DAGLink {
   public LinkMerge getLinkMerge() {
     return linkMerge;
   }
-  
+
   public Integer getPosition() {
     return position;
   }
-  
+
   public DAGLinkPort getSource() {
     return source;
   }

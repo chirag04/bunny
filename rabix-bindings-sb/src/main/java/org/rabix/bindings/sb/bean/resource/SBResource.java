@@ -1,25 +1,13 @@
 package org.rabix.bindings.sb.bean.resource;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import org.rabix.bindings.sb.bean.resource.requirement.*;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.rabix.bindings.sb.bean.resource.requirement.SBCreateFileRequirement;
-import org.rabix.bindings.sb.bean.resource.requirement.SBDockerResource;
-import org.rabix.bindings.sb.bean.resource.requirement.SBEnvVarRequirement;
-import org.rabix.bindings.sb.bean.resource.requirement.SBExpressionEngineRequirement;
-import org.rabix.bindings.sb.bean.resource.requirement.SBIORequirement;
-import org.rabix.bindings.sb.bean.resource.requirement.SBSchemaDefRequirement;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeId;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "class", defaultImpl = SBResource.class, visible = true)
 @JsonSubTypes({ @Type(value = SBDockerResource.class, name = "DockerRequirement"),
@@ -31,8 +19,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @Type(value = SBMemoryResource.class, name = "sbg:MemRequirement"),
     @Type(value = SBCpuResource.class, name = "sbg:CPURequirement") })
 @JsonInclude(Include.NON_NULL)
-public class SBResource {
-  
+public class SBResource implements Serializable {
+
   @JsonProperty("class")
   protected String type;
   protected Map<String, Object> raw = new HashMap<>();
@@ -70,7 +58,7 @@ public class SBResource {
   public String getType() {
     return type;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -100,5 +88,5 @@ public class SBResource {
   public String toString() {
     return "SBResource [type=" + type + ", raw=" + raw + "]";
   }
-  
+
 }

@@ -1,15 +1,17 @@
 package org.rabix.engine.store.model.scatter;
 
-public class PortMapping {
+import java.io.Serializable;
+
+public class PortMapping implements Serializable {
 
   private final String portId;
   private final Object value;
-  
+
   public PortMapping(String portId, Object value) {
     this.portId = portId;
     this.value = value;
   }
-  
+
   public String getPortId() {
     return portId;
   }

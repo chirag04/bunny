@@ -1,26 +1,22 @@
 package org.rabix.bindings.cwl.bean;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.rabix.bindings.cwl.bean.resource.CWLResource;
 import org.rabix.bindings.cwl.helper.CWLBindingHelper;
 import org.rabix.bindings.cwl.helper.CWLSchemaHelper;
 import org.rabix.bindings.cwl.json.CWLResourcesDeserializer;
 import org.rabix.bindings.cwl.json.CWLStepPortsDeserializer;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CWLStep {
+public class CWLStep implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -39,19 +35,19 @@ public class CWLStep {
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatter")
   private Object scatter;
-  
+
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatterMethod")
   private String scatterMethod;
-  
+
   @JsonProperty("hints")
   @JsonDeserialize(using = CWLResourcesDeserializer.class)
   protected List<CWLResource> hints = new ArrayList<>();
-  
+
   @JsonProperty("requirements")
   @JsonDeserialize(using = CWLResourcesDeserializer.class)
   protected List<CWLResource> requirements = new ArrayList<>();
-  
+
   @JsonIgnore
   private CWLJob job;
 
@@ -110,7 +106,7 @@ public class CWLStep {
   public String getId() {
     return id;
   }
-  
+
   public void setId(String id) {
     this.id = id;
   }
@@ -130,11 +126,11 @@ public class CWLStep {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   public List<CWLResource> getHints() {
     return hints;
   }

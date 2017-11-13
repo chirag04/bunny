@@ -1,7 +1,7 @@
 package org.rabix.bindings.draft2.bean;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.rabix.bindings.draft2.Draft2JobProcessor;
 import org.rabix.bindings.draft2.bean.resource.Draft2CpuResource;
 import org.rabix.bindings.draft2.bean.resource.Draft2MemoryResource;
@@ -11,18 +11,13 @@ import org.rabix.bindings.draft2.helper.Draft2SchemaHelper;
 import org.rabix.common.json.BeanPropertyView;
 import org.rabix.common.json.processor.BeanProcessorClass;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
+import java.io.Serializable;
+import java.util.Map;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @BeanProcessorClass(name = Draft2JobProcessor.class)
-public final class Draft2Job {
+public final class Draft2Job implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -39,11 +34,11 @@ public final class Draft2Job {
   @JsonProperty("scatter")
   @JsonView(BeanPropertyView.Full.class)
   private Object scatter;
-  
+
   @JsonProperty("scatterMethod")
   @JsonView(BeanPropertyView.Full.class)
   private String scatterMethod;
-  
+
   @JsonProperty("allocatedResources")
   private Draft2Resources resources;
 
@@ -52,7 +47,7 @@ public final class Draft2Job {
       @JsonProperty("inputs") Map<String, Object> inputs,
       @JsonProperty("outputs") Map<String, Object> outputs,
       @JsonProperty("allocatedResources") Draft2Resources resources,
-      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter, 
+      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter,
       @JsonProperty("scatterMethod") String scatterMethod) {
     this.id = id;
     this.app = app;
@@ -63,7 +58,7 @@ public final class Draft2Job {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   private void processPortDefaults() {
     if (inputs == null) {
       return;
@@ -85,7 +80,7 @@ public final class Draft2Job {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   public Draft2Job(String id, Draft2JobApp app, Map<String, Object> inputs, Map<String, Object> outputs) {
     this.id = id;
     this.app = app;
@@ -141,7 +136,7 @@ public final class Draft2Job {
   public void setResources(Draft2Resources resources) {
     this.resources = resources;
   }
-  
+
   public Draft2Resources getResources() {
     return resources;
   }
@@ -149,11 +144,11 @@ public final class Draft2Job {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj)

@@ -1,7 +1,7 @@
 package org.rabix.bindings.sb.bean;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.rabix.bindings.sb.SBJobProcessor;
 import org.rabix.bindings.sb.bean.resource.SBCpuResource;
 import org.rabix.bindings.sb.bean.resource.SBMemoryResource;
@@ -11,18 +11,13 @@ import org.rabix.bindings.sb.helper.SBSchemaHelper;
 import org.rabix.common.json.BeanPropertyView;
 import org.rabix.common.json.processor.BeanProcessorClass;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
+import java.io.Serializable;
+import java.util.Map;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @BeanProcessorClass(name = SBJobProcessor.class)
-public final class SBJob {
+public final class SBJob implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -39,11 +34,11 @@ public final class SBJob {
   @JsonProperty("scatter")
   @JsonView(BeanPropertyView.Full.class)
   private Object scatter;
-  
+
   @JsonProperty("scatterMethod")
   @JsonView(BeanPropertyView.Full.class)
   private String scatterMethod;
-  
+
   @JsonProperty("allocatedResources")
   private SBResources resources;
 
@@ -52,7 +47,7 @@ public final class SBJob {
       @JsonProperty("inputs") Map<String, Object> inputs,
       @JsonProperty("outputs") Map<String, Object> outputs,
       @JsonProperty("allocatedResources") SBResources resources,
-      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter, 
+      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter,
       @JsonProperty("scatterMethod") String scatterMethod) {
     this.id = id;
     this.app = app;
@@ -63,7 +58,7 @@ public final class SBJob {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   private void processPortDefaults() {
     if (inputs == null) {
       return;
@@ -85,7 +80,7 @@ public final class SBJob {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   public SBJob(String id, SBJobApp app, Map<String, Object> inputs, Map<String, Object> outputs) {
     this.id = id;
     this.app = app;
@@ -125,7 +120,7 @@ public final class SBJob {
   public void setId(String id) {
     this.id = id;
   }
-  
+
   public void setInputs(Map<String, Object> inputs) {
     this.inputs = inputs;
   }
@@ -145,7 +140,7 @@ public final class SBJob {
   public void setResources(SBResources resources) {
     this.resources = resources;
   }
-  
+
   public SBResources getResources() {
     return resources;
   }
@@ -153,11 +148,11 @@ public final class SBJob {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj)

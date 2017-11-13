@@ -1,21 +1,17 @@
 package org.rabix.bindings.draft2.bean;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.rabix.bindings.draft2.helper.Draft2BindingHelper;
+import org.rabix.bindings.draft2.helper.Draft2SchemaHelper;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.rabix.bindings.draft2.helper.Draft2BindingHelper;
-import org.rabix.bindings.draft2.helper.Draft2SchemaHelper;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Draft2Step {
+public class Draft2Step implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -32,11 +28,11 @@ public class Draft2Step {
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatter")
   private Object scatter;
-  
+
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("scatterMethod")
   private String scatterMethod;
-  
+
   @JsonIgnore
   private Draft2Job job;
 
@@ -112,7 +108,7 @@ public class Draft2Step {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }

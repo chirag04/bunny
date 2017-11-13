@@ -1,14 +1,12 @@
 package org.rabix.bindings.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Created by luka on 11.5.17..
- */
-public class ValidationReport {
+public class ValidationReport implements Serializable {
 
   public enum Severity {
     WARNING, ERROR

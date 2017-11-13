@@ -1,13 +1,14 @@
 package org.rabix.engine.store.model;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Created by luka on 22.5.17..
- */
-public class BackendRecord {
+public class BackendRecord implements Serializable {
 
   public enum Status {
     ACTIVE,
@@ -82,5 +83,42 @@ public class BackendRecord {
 
   public void setType(Type type) {
     this.type = type;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (!(obj instanceof BackendRecord)) {
+      return false;
+    }
+
+    if (obj == this) {
+      return true;
+    }
+
+    BackendRecord other = (BackendRecord) obj;
+    return new EqualsBuilder()
+            .append(id, other.id)
+            .append(name, other.name)
+            .append(heartbeatInfo, other.heartbeatInfo)
+            .append(status, other.status)
+            .append(type, other.type)
+            .append(backendConfig, other.backendConfig)
+            .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+            .append(id)
+            .append(name)
+            .append(heartbeatInfo)
+            .append(status)
+            .append(type)
+            .append(backendConfig)
+            .hashCode();
   }
 }

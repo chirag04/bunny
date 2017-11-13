@@ -1,11 +1,9 @@
 package org.rabix.engine.store.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * Created by luka on 15.3.17..
- */
-public class TimestampedModel {
+public class TimestampedModel implements Serializable {
   private LocalDateTime createdAt;
   private LocalDateTime modifiedAt;
 

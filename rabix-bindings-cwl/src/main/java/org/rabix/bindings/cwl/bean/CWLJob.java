@@ -1,23 +1,19 @@
 package org.rabix.bindings.cwl.bean;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.rabix.bindings.cwl.CWLJobProcessor;
 import org.rabix.bindings.cwl.helper.CWLSchemaHelper;
 import org.rabix.common.json.BeanPropertyView;
 import org.rabix.common.json.processor.BeanProcessorClass;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
+import java.io.Serializable;
+import java.util.Map;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @BeanProcessorClass(name = CWLJobProcessor.class)
-public final class CWLJob {
+public final class CWLJob implements Serializable {
 
   @JsonProperty("id")
   private String id;
@@ -34,11 +30,11 @@ public final class CWLJob {
   @JsonProperty("scatter")
   @JsonView(BeanPropertyView.Full.class)
   private Object scatter;
-  
+
   @JsonProperty("scatterMethod")
   @JsonView(BeanPropertyView.Full.class)
   private String scatterMethod;
-  
+
   @JsonProperty("runtime")
   private CWLRuntime runtime;
 
@@ -47,7 +43,7 @@ public final class CWLJob {
       @JsonProperty("inputs") Map<String, Object> inputs,
       @JsonProperty("outputs") Map<String, Object> outputs,
       @JsonProperty("runtime") CWLRuntime runtime,
-      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter, 
+      @JsonProperty("id") String id, @JsonProperty("scatter") Object scatter,
       @JsonProperty("scatterMethod") String scatterMethod) {
     this.id = id;
     this.app = app;
@@ -58,7 +54,7 @@ public final class CWLJob {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   private void processPortDefaults() {
     if (inputs == null) {
       return;
@@ -80,24 +76,24 @@ public final class CWLJob {
     this.scatterMethod = scatterMethod;
     processPortDefaults();
   }
-  
+
   public CWLJob(String id, CWLJobApp app, Map<String, Object> inputs, Map<String, Object> outputs) {
     this.id = id;
     this.app = app;
     this.inputs = inputs;
     this.outputs = outputs;
-    
+
     processPortDefaults();
   }
 
   public boolean isInlineJavascriptEnabled() {
     return app.getInlineJavascriptRequirement() != null;
   }
-  
+
   public boolean isShellCommandEscapeEnabled() {
     return app.getShellCommandRequirement() != null;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -129,11 +125,11 @@ public final class CWLJob {
   public Object getScatter() {
     return scatter;
   }
-  
+
   public String getScatterMethod() {
     return scatterMethod;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj)

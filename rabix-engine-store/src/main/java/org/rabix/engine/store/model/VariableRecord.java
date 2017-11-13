@@ -1,17 +1,18 @@
 package org.rabix.engine.store.model;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import org.rabix.bindings.model.LinkMerge;
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 import org.rabix.engine.store.cache.Cachable;
 import org.rabix.engine.store.cache.CacheKey;
 
-public class VariableRecord extends TimestampedModel implements Cachable {
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public class VariableRecord extends TimestampedModel implements Cachable, Serializable {
 
   public final static String CACHE_NAME = "VARIABLE_RECORD";
-  
+
   private UUID rootId;
 
   private String jobId;
@@ -24,7 +25,7 @@ public class VariableRecord extends TimestampedModel implements Cachable {
   private int numberOfGlobals; // number of 'global' outputs if node is scattered
 
   private int numberOfTimesUpdated = 0;
-  
+
   private boolean isDefault = true;
   private Object transform;
 
@@ -45,15 +46,15 @@ public class VariableRecord extends TimestampedModel implements Cachable {
   public UUID getRootId() {
     return rootId;
   }
-  
+
   public Object getTransform() {
     return transform;
   }
-  
+
   public void setTransform(Object transform) {
     this.transform = transform;
   }
-  
+
   public String getJobId() {
     return jobId;
   }
@@ -189,20 +190,20 @@ public class VariableRecord extends TimestampedModel implements Cachable {
   public String getCacheEntityName() {
     return CACHE_NAME;
   }
-  
+
   public static class VariableRecordCacheKey implements CacheKey {
     private String jobId;
     private String portId;
     private UUID rootId;
     private LinkPortType type;
-    
+
     public VariableRecordCacheKey(VariableRecord variableRecord) {
       this.jobId = variableRecord.getJobId();
       this.portId = variableRecord.getPortId();
       this.rootId = variableRecord.getRootId();
       this.type = variableRecord.getType();
     }
-    
+
     public VariableRecordCacheKey(String jobId, String portId, UUID rootId, LinkPortType type) {
       this.jobId = jobId;
       this.portId = portId;
@@ -230,7 +231,7 @@ public class VariableRecord extends TimestampedModel implements Cachable {
       }
       return false;
     }
-    
+
     public String getJobId() {
       return jobId;
     }
