@@ -460,14 +460,14 @@ ALTER TABLE job_stats ADD CONSTRAINT job_stats_context_fkey FOREIGN KEY (root_id
 
 
 --changeset bunny:1487849040814-75 dbms:postgresql
-ALTER TABLE variable_record drop index variable_record_job_index;
-ALTER TABLE variable_record drop index variable_record_port_index;
-ALTER TABLE variable_record drop index variable_record_type_index;
-ALTER TABLE variable_record drop index variable_record_context_index;
-ALTER TABLE link_record drop index link_record_context_index;
-ALTER TABLE link_record drop index link_record_destination_job_index;
-ALTER TABLE link_record drop index link_source_index;
-ALTER TABLE link_record drop index link_source_job_index;
-ALTER TABLE link_record drop index link_source_type_index;
+drop index variable_record_job_index;
+drop index variable_record_port_index;
+drop index variable_record_type_index;
+drop index variable_record_context_index;
+drop index link_record_context_index;
+drop index link_record_destination_job_index;
+drop index link_record_source_index;
+drop index link_record_source_job_index;
+drop index link_record_source_type_index;
 
 
