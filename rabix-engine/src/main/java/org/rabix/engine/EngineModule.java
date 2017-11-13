@@ -35,6 +35,7 @@ import org.rabix.engine.store.memory.InMemoryRepositoryRegistry;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryModule;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryRegistry;
 import org.rabix.engine.store.redis.RedisRepositoryModule;
+import org.rabix.engine.store.redis.RedisTransactionHelper;
 import org.rabix.engine.store.repository.TransactionHelper;
 
 import com.google.inject.AbstractModule;
@@ -60,6 +61,7 @@ public class EngineModule extends AbstractModule {
       bind(TransactionHelper.class).to(InMemoryRepositoryRegistry.class).in(Scopes.SINGLETON);
     } else if(persistence.equals("REDIS")) {
       install(new RedisRepositoryModule(configuration));
+      bind(TransactionHelper.class).to(RedisTransactionHelper.class).in(Scopes.SINGLETON);
     }
 
     bind(CacheService.class).to(CacheServiceImpl.class).in(Scopes.SINGLETON);
