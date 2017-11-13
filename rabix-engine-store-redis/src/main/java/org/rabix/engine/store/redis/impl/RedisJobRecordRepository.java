@@ -76,7 +76,10 @@ public class RedisJobRecordRepository extends JobRecordRepository {
         return redisRepository
                 .getAll(inNamespace(rootId), JobRecord.class)
                 .stream()
-                .filter(jobRecord -> jobRecord.getParentId().equals(parentId))
+                .filter(jobRecord -> {
+                    if (parentId == null) return jobRecord.getParentId() == null;
+                    else return parentId.equals(jobRecord.getParentId());
+                })
                 .collect(Collectors.toList());
     }
 
