@@ -52,16 +52,6 @@ public class InMemoryVariableRecordRepository extends VariableRecordRepository {
     }
     return result;
   }
-  
-  public List<VariableRecord> getByPort(String jobId, String portId, UUID contextId) {
-    List<VariableRecord> result = new ArrayList<>();
-    for (VariableRecord vr : getVariableRecords(contextId)) {
-      if (vr.getJobId().equals(jobId) && vr.getPortId().equals(portId) && vr.getRootId().equals(contextId)) {
-        result.add(vr);
-      }
-    }
-    return result;
-  }
 
   public VariableRecord get(String jobId, String portId, LinkPortType type, UUID contextId) {
     for (VariableRecord vr : getVariableRecords(contextId)) {
@@ -93,20 +83,6 @@ public class InMemoryVariableRecordRepository extends VariableRecordRepository {
       variableRecordsPerContext.put(contextId, variableList);
     }
     return variableList;
-  }
-
-  @Override
-  public void insertBatch(Iterator<VariableRecord> records) {
-    while(records.hasNext()) {
-      insert(records.next());
-    }
-  }
-
-  @Override
-  public void updateBatch(Iterator<VariableRecord> records) {
-    while(records.hasNext()) {
-      update(records.next());
-    }
   }
 
   @Override

@@ -3,12 +3,10 @@ package org.rabix.engine.store.memory.impl;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import org.rabix.bindings.model.Job;
 import org.rabix.bindings.model.Job.JobStatus;
@@ -30,11 +28,11 @@ public class InMemoryJobRepository implements JobRepository {
     Map<UUID, JobEntity> rootJobs = jobRepository.get(job.getRootId());
     if(rootJobs == null) {
       rootJobs = new HashMap<UUID, JobEntity>();
-      rootJobs.put(job.getId(), new JobEntity(job, groupId, producedByNode));
+      rootJobs.put(job.getId(), new JobEntity(job, groupId));
       jobRepository.put(job.getRootId(), rootJobs);
     }
     else {
-      rootJobs.put(job.getId(), new JobEntity(job, groupId, producedByNode));
+      rootJobs.put(job.getId(), new JobEntity(job, groupId));
     }
   }
 
@@ -72,21 +70,6 @@ public class InMemoryJobRepository implements JobRepository {
   }
 
   @Override
-  public void update(Iterator<Job> jobs) {
-    while(jobs.hasNext()){
-      Job next = jobs.next();
-      jobRepository.get(next.getRootId()).get(next.getId()).setJob(next);
-    }
-  }
-
-  @Override
-  public void updateStatus(UUID rootId, JobStatus status, Set<JobStatus> statuses) {  
-    Map<UUID, JobEntity> jobs = jobRepository.get(rootId);
-    jobs.values().stream().filter(p -> statuses.contains(p.getJob().getStatus()))
-        .forEach(p -> {p.setJob(Job.cloneWithStatus(p.getJob(), status));});
-  }
-
-  @Override
   public Set<Job> getRootJobsForDeletion(JobStatus status, Timestamp time) {
     // TODO Auto-generated method stub
     return null;
@@ -96,10 +79,4 @@ public class InMemoryJobRepository implements JobRepository {
   public void deleteByRootIds(Set<UUID> rootIds) {
     // TODO Auto-generated method stub
   }
-
-  @Override
-  public void insert(Iterator<Job> jobs) {
-    
-  }
-  
 }

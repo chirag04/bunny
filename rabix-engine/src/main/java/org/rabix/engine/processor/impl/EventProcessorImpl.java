@@ -91,7 +91,7 @@ public class EventProcessorImpl implements EventProcessor {
                   return null;
                 }
                 if (checkForReadyJobs(eventReference.get())) {
-                  Set<Job> readyJobs = jobRepository.getReadyJobsByGroupId(eventReference.get().getEventGroupId()).stream().filter(job->job.getStatus().equals(JobStatus.READY)).collect(Collectors.toSet());
+                  Set<Job> readyJobs = jobRepository.getReadyJobsByGroupId(eventReference.get().getEventGroupId());
                   jobService.handleJobsReady(readyJobs, eventReference.get().getContextId(), eventReference.get().getProducedByNode());  
                 }
                 eventRepository.deleteGroup(eventReference.get().getEventGroupId());

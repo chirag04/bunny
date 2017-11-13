@@ -18,35 +18,19 @@ public class LinkRecordServiceImpl implements LinkRecordService {
   public LinkRecordServiceImpl(LinkRecordRepository linkRecordRepository) {
     this.linkRecordRepository = linkRecordRepository;
   }
-
+  @Override
   public void create(LinkRecord link) {
     linkRecordRepository.insert(link);
   }
-
-  public List<LinkRecord> findBySourceJobId(String jobId, UUID rootId) {
-    return linkRecordRepository.getBySourceJobId(jobId, rootId);
-  }
-
+  
+  @Override
   public List<LinkRecord> findBySourceAndSourceType(String jobId, LinkPortType varType, UUID rootId) {
     return linkRecordRepository.getBySourceAndSourceType(jobId, varType, rootId);
   }
 
-  public List<LinkRecord> findBySource(String jobId, String portId, UUID rootId) {
-    return linkRecordRepository.getBySource(jobId, portId, rootId);
-  }
-
-  public int findBySourceCount(String jobId, String portId, UUID rootId) {
-    return linkRecordRepository.getBySourceCount(jobId, portId, rootId);
-  }
-
-
+  @Override
   public List<LinkRecord> findBySourceAndDestinationType(String jobId, String portId, LinkPortType varType, UUID rootId) {
     return linkRecordRepository.getBySourceAndDestinationType(jobId, portId, varType, rootId);
-  }
-
-  @Override
-  public List<LinkRecord> findBySource(String jobId, UUID rootId) {
-    return linkRecordRepository.getBySource(jobId, rootId);
   }
 
   @Override

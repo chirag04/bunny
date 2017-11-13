@@ -168,14 +168,14 @@ public class JobServiceImpl implements JobService {
   public void stop(Job job) throws JobServiceException {
     logger.debug("Stop Job {}", job.getId());
 
-    if (job.isRoot()) {
-      Set<JobStatus> statuses = new HashSet<>();
-      statuses.add(JobStatus.READY);
-      statuses.add(JobStatus.PENDING);
-      statuses.add(JobStatus.RUNNING);
-      statuses.add(JobStatus.STARTED);
-      jobRepository.updateStatus(job.getId(), JobStatus.ABORTED, statuses);
-    }
+//    if (job.isRoot()) {
+//      Set<JobStatus> statuses = new HashSet<>();
+//      statuses.add(JobStatus.READY);
+//      statuses.add(JobStatus.PENDING);
+//      statuses.add(JobStatus.RUNNING);
+//      statuses.add(JobStatus.STARTED);
+//      jobRepository.updateStatus(job.getId(), JobStatus.ABORTED, statuses);
+//    }
     logger.info("Job {} rootId: {} stopped", job.getName(), job.getRootId());
   }
 

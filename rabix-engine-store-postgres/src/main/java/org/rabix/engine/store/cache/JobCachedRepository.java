@@ -2,7 +2,6 @@ package org.rabix.engine.store.cache;
 
 import java.sql.Timestamp;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,26 +26,29 @@ public class JobCachedRepository implements JobRepository {
     this.repo = repo;
     this.setCache = manager.getCache(JobCachedRepository.SET_CACHE, UUID.class, HashSet.class);
     if (setCache == null) {
-      this.setCache = manager.createCache(JobCachedRepository.SET_CACHE, CacheConfigurationBuilder
-          .newCacheConfigurationBuilder(UUID.class, HashSet.class, ResourcePoolsBuilder.heap(1000)).build());
+      this.setCache = manager.createCache(JobCachedRepository.SET_CACHE,
+          CacheConfigurationBuilder.newCacheConfigurationBuilder(UUID.class, HashSet.class, ResourcePoolsBuilder.heap(1000)).build());
     }
   }
 
   @Override
   public Set<Job> getReadyJobsByGroupId(UUID groupId) {
-     HashSet out = setCache.get(groupId);
-     repo.insert(out.iterator());
-     setCache.remove(groupId);
-     return out;
+    HashSet out = setCache.get(groupId);
+    setCache.remove(groupId);
+    return out == null ? new HashSet() : out;
   }
 
   @Override
   public void insert(Job job, UUID groupId, String producedByNode) {
-    if (job.getRootId().equals(groupId)) {
+    if (job.getId().equals(groupId)) {
       repo.insert(job, groupId, producedByNode);
     } else {
-      Set set = setCache.get(groupId);
+      HashSet set = setCache.get(groupId);
+      if (set == null) {
+        set = new HashSet<>();
+      }
       set.add(job);
+      setCache.put(groupId, set);
     }
   }
 
@@ -59,11 +61,6 @@ public class JobCachedRepository implements JobRepository {
   public void updatePartial(Job job) {
     repo.updatePartial(job);
   }
-  
-  @Override
-  public void update(Iterator<Job> jobs) {
-    repo.update(jobs);
-  }
 
   @Override
   public Job get(UUID id) {
@@ -72,22 +69,11 @@ public class JobCachedRepository implements JobRepository {
 
   @Override
   public Set<Job> getRootJobsForDeletion(JobStatus status, Timestamp olderThanTime) {
-   return repo.getRootJobsForDeletion(status, olderThanTime);
+    return repo.getRootJobsForDeletion(status, olderThanTime);
   }
 
   @Override
   public void deleteByRootIds(Set<UUID> rootIds) {
-     repo.deleteByRootIds(rootIds);
-  }
-
-  @Override
-  public void insert(Iterator<Job> jobs) {
-    repo.insert(jobs);
-  }
-
-  @Override
-  public void updateStatus(UUID rootId, JobStatus status, Set<JobStatus> whereStatuses) {
-    // TODO Auto-generated method stub
-    
+    repo.deleteByRootIds(rootIds);
   }
 }

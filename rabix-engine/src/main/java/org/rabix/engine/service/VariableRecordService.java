@@ -19,8 +19,6 @@ public interface VariableRecordService {
   
   List<VariableRecord> find(String jobId, LinkPortType type, UUID rootId);
   
-  List<VariableRecord> find(String jobId, String portId, UUID rootId);
-
   void addValue(VariableRecord variableRecord, Object value, Integer position, boolean wrap);
   
   Object linkMerge(VariableRecord variableRecord);

@@ -33,10 +33,6 @@ public class VariableRecordServiceImpl implements VariableRecordService {
     return repo.getByType(jobId, type, rootId);
   }
 
-  public List<VariableRecord> find(String jobId, String portId, UUID rootId) {
-    return repo.getByPort(jobId, portId, rootId);
-  }
-
   public VariableRecord find(String jobId, String portId, LinkPortType type, UUID rootId) {
     return repo.get(jobId, portId, type, rootId);
   }
