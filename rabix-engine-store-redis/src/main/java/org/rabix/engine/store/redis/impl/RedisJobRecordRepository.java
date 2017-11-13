@@ -26,7 +26,7 @@ public class RedisJobRecordRepository extends JobRecordRepository {
 
     @Override
     public int update(JobRecord jobRecord) {
-        redisRepository.set(inNamespace(jobRecord.getRootId()), jobRecord.isRoot() ? null : jobRecord.getId(), jobRecord);
+        redisRepository.set(inNamespace(jobRecord.getRootId()), jobRecord.getId(), jobRecord);
         return 0;
     }
 
