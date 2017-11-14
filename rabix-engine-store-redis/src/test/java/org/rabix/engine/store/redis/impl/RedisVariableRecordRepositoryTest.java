@@ -84,17 +84,15 @@ public class RedisVariableRecordRepositoryTest extends RedisRepositoryTest {
         String portId = "port_id";
 
         VariableRecord variableRecord1 = generateRandom(rootId, jobId, portId, DAGLinkPort.LinkPortType.INPUT);
-        VariableRecord variableRecord2 = generateRandom(rootId, jobId, portId, DAGLinkPort.LinkPortType.INPUT);
-        VariableRecord variableRecord3 = generateRandom(rootId, jobId, portId, DAGLinkPort.LinkPortType.OUTPUT);
+        VariableRecord variableRecord2 = generateRandom(rootId, jobId, portId, DAGLinkPort.LinkPortType.OUTPUT);
 
         variableRecordRepository.insert(variableRecord1);
         variableRecordRepository.insert(variableRecord2);
-        variableRecordRepository.insert(variableRecord3);
 
         List<VariableRecord> insertedRecords = variableRecordRepository.getByType(jobId, DAGLinkPort.LinkPortType.INPUT, rootId);
 
-        assertEquals(insertedRecords.size(), 2);
-        assertTrue(insertedRecords.containsAll(Arrays.asList(variableRecord1, variableRecord2)));
+        assertEquals(insertedRecords.size(), 1);
+        assertTrue(insertedRecords.containsAll(Collections.singletonList(variableRecord1)));
     }
 
     @Test

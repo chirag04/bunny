@@ -1,6 +1,6 @@
 package org.rabix.engine.store.redis.impl;
 
-import org.rabix.bindings.model.dag.DAGLinkPort;
+import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 import org.rabix.engine.store.model.JobRecord;
 import org.rabix.engine.store.model.VariableRecord;
 import org.rabix.engine.store.redis.RedisRepository;
@@ -33,31 +33,15 @@ public class RedisVariableRecordRepository extends VariableRecordRepository {
 
     @Override
     public int insert(VariableRecord variableRecord) {
-        redisRepository.append(
-                inNamespace(variableRecord.getRootId(), variableRecord.getJobId()),
-                variableRecord.getPortId(),
-                variableRecord);
-        return 0;
+        return update(variableRecord);
     }
 
     @Override
     public int update(VariableRecord variableRecord) {
-        List<VariableRecord> candidates = getByPort(variableRecord.getJobId(), variableRecord.getPortId(), variableRecord.getRootId());
-
-        for (int i = 0; i < candidates.size(); i++) {
-            VariableRecord candidate = candidates.get(i);
-            if (candidate.getType() == variableRecord.getType()) {
-                candidate.setValue(variableRecord.getValue());
-
-                redisRepository.setInList(
-                        inNamespace(variableRecord.getRootId(), variableRecord.getJobId()),
-                        variableRecord.getPortId(),
-                        i,
-                        candidate);
-
-                break;
-            }
-        }
+        redisRepository.set(
+                inNamespace(variableRecord.getRootId(), variableRecord.getJobId(), variableRecord.getType()),
+                variableRecord.getPortId(),
+                variableRecord);
         return 0;
     }
 
@@ -67,7 +51,7 @@ public class RedisVariableRecordRepository extends VariableRecordRepository {
     }
 
     @Override
-    public VariableRecord get(String jobId, String portId, DAGLinkPort.LinkPortType type, UUID rootId) {
+    public VariableRecord get(String jobId, String portId, LinkPortType type, UUID rootId) {
         Optional<VariableRecord> variableRecordOptional = getByPort(jobId, portId, rootId)
                 .stream()
                 .filter(variableRecord -> variableRecord.getType() == type)
@@ -76,9 +60,9 @@ public class RedisVariableRecordRepository extends VariableRecordRepository {
     }
 
     @Override
-    public List<VariableRecord> getByType(String jobId, DAGLinkPort.LinkPortType type, UUID rootId) {
+    public List<VariableRecord> getByType(String jobId, LinkPortType type, UUID rootId) {
         return redisRepository
-                .getList(inNamespace(rootId, jobId), null, VariableRecord.class)
+                .getAll(inNamespace(rootId, jobId, type), VariableRecord.class)
                 .stream()
                 .filter(variableRecord -> variableRecord.getType() == type)
                 .collect(Collectors.toList());
@@ -86,13 +70,19 @@ public class RedisVariableRecordRepository extends VariableRecordRepository {
 
     @Override
     public List<VariableRecord> getByPort(String jobId, String portId, UUID rootId) {
-        return redisRepository
-                .getList(inNamespace(rootId, jobId), portId, VariableRecord.class)
+        List<VariableRecord> variableRecords = new ArrayList<>();
+
+        for (LinkPortType type : LinkPortType.values()) {
+            variableRecords.addAll(getByType(jobId, type, rootId));
+        }
+
+        return variableRecords
                 .stream()
+                .filter(variableRecord -> variableRecord.getPortId().equals(portId))
                 .collect(Collectors.toList());
     }
 
-    private String inNamespace(UUID rootId, String jobId) {
-        return VARIABLE_RECORD_NAMESPACE + ":" + rootId + ":" + jobId;
+    private String inNamespace(UUID rootId, String jobId, LinkPortType type) {
+        return VARIABLE_RECORD_NAMESPACE + ":" + rootId + ":" + jobId + ":" + (type == null ? "" : type);
     }
 }
