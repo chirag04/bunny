@@ -437,3 +437,37 @@ alter table job alter column outputs  type bytea using convert_to(outputs::text,
 alter table job alter column inputs  type bytea using convert_to(inputs::text,'UTF8');
 alter table event alter column event  type bytea using convert_to(event::text,'UTF8');
 alter table variable_record alter column value  type bytea using convert_to(value::text,'UTF8');
+
+
+--changeset bunny:1487849040814-71 dbms:postgresql
+alter table backend alter column configuration type text
+--rollback alter table backend alter column configuration type jsonb USING configuration::jsonb
+
+
+--changeset bunny:1487849040814-72 dbms:postgresql
+ALTER TABLE intermediary_files ADD CONSTRAINT key PRIMARY KEY (root_id, filename);
+--rollback ALTER TABLE public.intermediary_files DROP CONSTRAINT key PRIMARY KEY (root_id, filename);
+
+--changeset bunny:1487849040814-73 dbms:postgresql
+ALTER TABLE public.job drop CONSTRAINT job_backend_status_check;
+--rollback ALTER TABLE job ADD CONSTRAINT job_backend_status_check CHECK (backend_id IS NOT NULL OR status <> 'RUNNING'::job_status OR parent_id IS NULL);
+
+--changeset bunny:1487849040814-74 dbms:postgresql
+ALTER TABLE job_stats
+    DROP CONSTRAINT job_stats_id_fkey;
+ALTER TABLE job_stats ADD CONSTRAINT job_stats_context_fkey FOREIGN KEY (root_id) REFERENCES context_record (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE;
+--rollback ALTER TABLE job_stats DROP CONSTRAINT job_stats_context_fkey; ALTER TABLE job_stats ADD CONSTRAINT job_stats_id_fkey FOREIGN KEY (root_id) REFERENCES job (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE;
+
+
+--changeset bunny:1487849040814-75 dbms:postgresql
+drop index variable_record_job_index;
+drop index variable_record_port_index;
+drop index variable_record_type_index;
+drop index variable_record_context_index;
+drop index link_record_context_index;
+drop index link_record_destination_job_index;
+drop index link_record_source_index;
+drop index link_record_source_job_index;
+drop index link_record_source_type_index;
+
+

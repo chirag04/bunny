@@ -1,7 +1,6 @@
 package org.rabix.engine.store.repository;
 
 import java.sql.Timestamp;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,59 +12,36 @@ public interface JobRepository {
   void insert(Job job, UUID groupId, String producedByNode);
   
   void update(Job job);
-  
-  void update(Iterator<Job> jobs);
-  
-  void updateStatus(UUID rootId, JobStatus status, Set<JobStatus> whereStatuses);
-  
-  void updateBackendId(UUID jobId, UUID backendId);
-  
-  void updateBackendIds(Iterator<JobEntity> jobBackendPair);
-  
-  void dealocateJobs(UUID backendId);
-  
+      
   Job get(UUID id);
-  
-  Set<Job> get();
-  
-  Set<Job> getByRootId(UUID rootId);
   
   Set<Job> getRootJobsForDeletion(JobStatus status, Timestamp olderThanTime);
   
-  Set<Job> get(UUID rootID, Set<JobStatus> whereStatuses);
-  
-  Set<UUID> getBackendsByRootId(UUID rootId);
-  
-  UUID getBackendId(UUID jobId);
-  
   Set<Job> getReadyJobsByGroupId(UUID groupId);
-
-  Set<JobEntity> getReadyFree();
-  
-  JobStatus getStatus(UUID id);
-  
+    
   void deleteByRootIds(Set<UUID> rootIds);
+  
+  default void updatePartial(Job job) {
+    update(job);
+  }
   
   public class JobEntity {
     
     Job job;
     UUID groupId;
-    String producedByNode;
     UUID backendId;
     
-    public JobEntity(Job job, UUID groupId, String producedByNode, UUID backendId) {
+    public JobEntity(Job job, UUID groupId, UUID backendId) {
       super();
       this.job = job;
       this.groupId = groupId;
       this.backendId = backendId;
-      this.producedByNode = producedByNode;
     }
 
-    public JobEntity(Job job, UUID groupId, String producedByNode) {
+    public JobEntity(Job job, UUID groupId) {
       super();
       this.job = job;
       this.groupId = groupId;
-      this.producedByNode = producedByNode;
       this.backendId = null;
     }
 
@@ -81,10 +57,6 @@ public interface JobRepository {
       return groupId;
     }
     
-    public String getProducedByNode() {
-      return producedByNode;
-    }
-    
     public void setGroupId(UUID groupId) {
       this.groupId = groupId;
     }
@@ -96,10 +68,7 @@ public interface JobRepository {
     public void setBackendId(UUID backendId) {
       this.backendId = backendId;
     }
-
-    public void setProducedByNode(String producedByNode) {
-      this.producedByNode = producedByNode;
-    }
+    
     @Override
     public int hashCode() {
       final int prime = 31;

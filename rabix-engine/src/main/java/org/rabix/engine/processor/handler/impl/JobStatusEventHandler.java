@@ -46,6 +46,7 @@ import org.rabix.engine.service.VariableRecordService;
 import org.rabix.engine.store.model.ContextRecord;
 import org.rabix.engine.store.model.ContextRecord.ContextStatus;
 import org.rabix.engine.store.model.JobRecord;
+import org.rabix.engine.store.model.JobRecord.JobState;
 import org.rabix.engine.store.model.JobRecord.PortCounter;
 import org.rabix.engine.store.model.JobStatsRecord;
 import org.rabix.engine.store.model.LinkRecord;
@@ -214,12 +215,14 @@ public class JobStatusEventHandler implements EventHandler<JobStatusEvent> {
       jobRecordStatuses.add(JobRecord.JobState.READY);
       jobRecordStatuses.add(JobRecord.JobState.RUNNING);
 
-      List<JobRecord> records = jobRecordService.find(jobRecord.getRootId(), jobRecordStatuses);
+      List<JobRecord> records = jobRecordService.find(jobRecord.getRootId());
       for (JobRecord record : records) {
-        record.setState(JobRecord.JobState.ABORTED);
-        jobRecordService.update(record);
+        if (record.getState().equals(JobState.RUNNING) || record.getState().equals(JobState.READY)) {
+          record.setState(JobRecord.JobState.ABORTED);
+          jobRecordService.update(record);
+        }
       }
-      
+
       ContextRecord contextRecord = contextRecordService.find(jobRecord.getRootId());
       contextRecord.setStatus(ContextStatus.ABORTED);
       contextRecordService.update(contextRecord);

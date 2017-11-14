@@ -16,6 +16,7 @@ import org.rabix.engine.event.impl.OutputUpdateEvent;
 import org.rabix.engine.processor.EventProcessor;
 import org.rabix.engine.processor.handler.EventHandler;
 import org.rabix.engine.processor.handler.EventHandlerException;
+import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.JobRecordService;
 import org.rabix.engine.service.JobService;
 import org.rabix.engine.service.LinkRecordService;
@@ -27,6 +28,8 @@ import org.rabix.engine.store.model.LinkRecord;
 import org.rabix.engine.store.model.VariableRecord;
 import org.rabix.engine.store.model.scatter.ScatterStrategy;
 import org.rabix.engine.store.model.scatter.ScatterStrategy.JobPortPair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
@@ -47,10 +50,15 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
   private JobService jobService;
   @Inject
   private JobHelper jobHelper;
+  @Inject
+  private IntermediaryFilesService filesService;
+  
+  private Logger logger = LoggerFactory.getLogger(getClass());
+
   
   public void handle(final OutputUpdateEvent event) throws EventHandlerException {
+    logger.debug(event.toString());
     JobRecord sourceJob = jobRecordService.find(event.getJobId(), event.getContextId());
-    
     if (sourceJob.isScatterWrapper()) {
       jobRecordService.resetOutputPortCounter(sourceJob, event.getNumberOfScattered(), event.getPortId());
     }
@@ -65,10 +73,9 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
     
     if (sourceJob.isCompleted()) {
       if(sourceJob.getOutputCounter(sourceVariable.getPortId()) != null) {
-        if (sourceJob.isRoot()) {
+        if (sourceJob.isRoot() && sourceJob.isContainer()) {
           Job rootJob = createJob(sourceJob, JobHelper.transformStatus(sourceJob.getState()));
-            eventProcessor.addToQueue(
-                new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobRecord.JobState.COMPLETED, rootJob.getOutputs(), event.getEventGroupId(), InternalSchemaHelper.ROOT_NAME));
+          eventProcessor.send(new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobRecord.JobState.COMPLETED, rootJob.getOutputs(), event.getEventGroupId(), InternalSchemaHelper.ROOT_NAME));
           return;
         }
       }
@@ -106,10 +113,15 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
     }
     
     if (sourceJob.isCompleted() && (sourceJob.isScatterWrapper() || sourceJob.isContainer())) {
-      eventProcessor.addToQueue(new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobState.COMPLETED, createJob(sourceJob, JobStatus.COMPLETED).getOutputs(),
+      eventProcessor.send(new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobState.COMPLETED, createJob(sourceJob, JobStatus.COMPLETED).getOutputs(),
           event.getEventGroupId(), sourceJob.getId()));
     }
+    
+    if (sourceJob.isCompleted() || links.isEmpty()) {
+      filesService.handleDanglingOutput(event.getContextId(), value);
+    }
   }
+  
 
   private Event createChildEvent(final OutputUpdateEvent event, JobRecord sourceJob, Integer numberOfScattered, LinkRecord link, Object tempValue) {
     switch (link.getDestinationVarType()) {

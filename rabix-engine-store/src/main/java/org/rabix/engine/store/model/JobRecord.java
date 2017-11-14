@@ -1,5 +1,6 @@
 package org.rabix.engine.store.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,13 +10,11 @@ import org.rabix.bindings.model.LinkMerge;
 import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
 import org.rabix.bindings.model.dag.DAGNode;
 import org.rabix.engine.store.model.scatter.ScatterStrategy;
-import org.rabix.engine.store.cache.Cachable;
-import org.rabix.engine.store.cache.CacheKey;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class JobRecord extends TimestampedModel implements Cachable {
+public class JobRecord extends TimestampedModel implements Serializable{
 
   public static class JobIdRootIdPair {
     final public String id;
@@ -297,16 +296,6 @@ public class JobRecord extends TimestampedModel implements Cachable {
     return getInputPortIncoming(port) > 1 && LinkMerge.isBlocking(node.getLinkMerge(port, LinkPortType.INPUT));
   }
 
-  @Override
-  public String getCacheEntityName() {
-    return CACHE_NAME;
-  }
-  
-  @Override
-  public CacheKey getCacheKey() {
-    return new JobCacheKey(this);
-  }
-
   public static class PortCounter {
     @JsonProperty("port")
     public String port;
@@ -387,61 +376,6 @@ public class JobRecord extends TimestampedModel implements Cachable {
           + ", updatedAsSourceCounter=" + updatedAsSourceCounter + ", globalCounter=" + globalCounter + "]";
     }
     
-  }
-  
-  public static class JobCacheKey implements CacheKey {
-    String id;
-    UUID root;
-    
-    public JobCacheKey(JobRecord record) {
-      this.id = record.id;
-      this.root = record.rootId;
-    }
-    
-    public JobCacheKey(String id, UUID rootId) {
-      this.id = id;
-      this.root = rootId;
-    }
-    
-    @Override
-    public boolean satisfies(CacheKey key) {
-      if (key instanceof JobCacheKey) {
-        return id.equals(((JobCacheKey) key).id) && root.equals(((JobCacheKey) key).root);
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + ((id == null) ? 0 : id.hashCode());
-      result = prime * result + ((root == null) ? 0 : root.hashCode());
-      return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      JobCacheKey other = (JobCacheKey) obj;
-      if (id == null) {
-        if (other.id != null)
-          return false;
-      } else if (!id.equals(other.id))
-        return false;
-      if (root == null) {
-        if (other.root != null)
-          return false;
-      } else if (!root.equals(other.root))
-        return false;
-      return true;
-    }
-
   }
 
   @Override

@@ -123,7 +123,7 @@ public class ScatterHandler {
 
       List<VariableRecord> outputVariableRecords = variableRecordService.find(job.getId(), LinkPortType.OUTPUT, job.getRootId());
       for (VariableRecord outputVariableRecord : outputVariableRecords) {
-        eventProcessor.addToQueue(new OutputUpdateEvent(job.getRootId(), job.getId(), outputVariableRecord.getPortId(), output, 1, 1, event.getEventGroupId(), event.getProducedByNode()));
+        eventProcessor.send(new OutputUpdateEvent(job.getRootId(), job.getId(), outputVariableRecord.getPortId(), output, 1, 1, event.getEventGroupId(), event.getProducedByNode()));
       }
       return;
     }
@@ -140,7 +140,7 @@ public class ScatterHandler {
     if (ScatterMethod.isBlocking(node.getScatterMethod())) {
       isBlocking = true;
     }
-    return new JobRecord(contextId, id, JobRecordService.generateUniqueId(), parentId, JobRecord.JobState.PENDING, node instanceof DAGContainer, isScattered, false, isBlocking, dagCache);
+    return new JobRecord(contextId, id, UUID.randomUUID(), parentId, JobRecord.JobState.PENDING, node instanceof DAGContainer, isScattered, false, isBlocking, dagCache);
   }
   
   private void createScatteredJobs(JobRecord job, Event event, String port, Object value, DAGNode node, Integer numberOfScattered, Integer position) throws EventHandlerException {

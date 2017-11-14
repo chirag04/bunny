@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.Binder;
 import org.skife.jdbi.v2.sqlobject.BinderFactory;
 import org.skife.jdbi.v2.sqlobject.BindingAnnotation;
-import org.skife.jdbi.v2.sqlobject.SqlBatch;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
@@ -44,30 +42,14 @@ public interface JDBIJobRepository extends JobRepository {
   @Override
   @SqlUpdate("insert into job (id,root_id,name, parent_id, status, message, inputs, outputs, resources, group_id, produced_by_node, app, config) values (:id,:root_id,:name,:parent_id,:status::job_status,:message,:inputs,:outputs,:resources::jsonb,:group_id,:produced_by_node,:app,:config::jsonb)")
   void insert(@BindJob Job job, @Bind("group_id") UUID groupId, @Bind("produced_by_node") String producedByNode);
-
+  
   @Override
   @SqlUpdate("update job set root_id=:root_id,name=:name, parent_id=:parent_id, status=:status::job_status, message=:message, inputs=:inputs, outputs=:outputs, resources=:resources::jsonb,app=:app,config=:config::jsonb,modified_at='now' where id=:id")
   void update(@BindJob Job job);
-  
-  @Override
-  @SqlBatch("update job set root_id=:root_id,name=:name, parent_id=:parent_id, status=:status::job_status, message=:message, inputs=:inputs, outputs=:outputs, resources=:resources::jsonb,app=:app,config=:config::jsonb,modified_at='now' where id=:id")
-  void update(@BindJob Iterator<Job> jobs);
 
   @Override
-  @SqlUpdate("update job set backend_id=:backend_id,modified_at='now' where id=:id")
-  void updateBackendId(@Bind("id") UUID jobId, @Bind("backend_id") UUID backendId);
-  
-  @Override
-  @SqlBatch("update job set backend_id=:backend_id,modified_at='now' where id=:id")
-  void updateBackendIds(@BindJobEntityBackendId Iterator<JobEntity> entities);
-
-  @Override
-  @SqlUpdate("update job set status=:status::job_status,modified_at='now' where status::text in (<statuses>) and root_id=:root_id")
-  void updateStatus(@Bind("root_id") UUID rootId, @Bind("status") JobStatus status, @BindIn("statuses") Set<JobStatus> whereStatuses);
-  
-  @Override
-  @SqlUpdate("update job set backend_id=null, status='READY'::job_status,modified_at='now' where backend_id=:backend_id and status in ('READY'::job_status,'RUNNING'::job_status)")
-  void dealocateJobs(@Bind("backend_id") UUID backendId);
+  @SqlUpdate("update job set status=:status::job_status, message=:message, outputs=:outputs, modified_at='now', config=:config::jsonb where id=:id")
+  void updatePartial(@BindJob Job job);
 
   @Override
   @SqlQuery("select * from job where id=:id")
@@ -78,36 +60,8 @@ public interface JDBIJobRepository extends JobRepository {
   Set<Job> getRootJobsForDeletion(@Bind("status") JobStatus status, @Bind("time") Timestamp olderThanTime);
   
   @Override
-  @SqlQuery("select status from job where id=:id")
-  JobStatus getStatus(@Bind("id") UUID id);
-  
-  @Override
-  @SqlQuery("select * from job")
-  Set<Job> get();
-  
-  @Override
-  @SqlQuery("select * from job where status::text in (<statuses>) and root_id=:root_id")
-  Set<Job> get(@Bind("root_id") UUID rootID, @BindIn("statuses") Set<JobStatus> whereStatuses);
-  
-  @Override
-  @SqlQuery("select backend_id from job where root_id=:root_id")
-  Set<UUID> getBackendsByRootId(@Bind("root_id") UUID rootId);
-  
-  @Override
-  @SqlQuery("select backend_id from job where id=:id")
-  UUID getBackendId(@Bind("id") UUID id);
-  
-  @Override
-  @SqlQuery("select * from job where root_id=:root_id")
-  Set<Job> getByRootId(@Bind("root_id") UUID rootId);
-  
-  @Override
   @SqlQuery("select * from job where group_id=:group_id and status='READY'::job_status")
   Set<Job> getReadyJobsByGroupId(@Bind("group_id") UUID group_id);
-
-  @Override
-  @SqlQuery("select * from job where backend_id is null and status='READY'::job_status")
-  Set<JobEntity> getReadyFree();
   
   @Override
   @SqlUpdate("delete from job where root_id in (<ids>)")
@@ -145,7 +99,6 @@ public interface JDBIJobRepository extends JobRepository {
       UUID parentId = r.getObject("parent_id", UUID.class);
       String name = r.getString("name");
       String app = r.getString("app");
-      String producedByNode = r.getString("produced_by_node");
       Job.JobStatus status = Job.JobStatus.valueOf(r.getString("status"));
       String message = r.getString("message");
       String inputsJson = new String(r.getBytes("inputs"));
@@ -160,7 +113,7 @@ public interface JDBIJobRepository extends JobRepository {
       Map<String, Object> config = JSONHelper.readMap(configJson);
 
       Job job = new Job(id, parentId, root_id, name, app, status, message, inputs, outputs, config, res, Collections.emptySet());
-      return new JobEntity(job, groupId, producedByNode, backendId);
+      return new JobEntity(job, groupId, backendId);
     }
   }
   
@@ -219,7 +172,6 @@ public interface JDBIJobRepository extends JobRepository {
               q.bind("config", JSONHelper.writeObject(job.getConfig()));
             }
             q.bind("group_id", entity.getGroupId());
-            q.bind("produced_by_node", entity.getProducedByNode());
             q.bind("backend_id", entity.getBackendId());
           }
         };

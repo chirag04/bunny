@@ -1,11 +1,10 @@
 package org.rabix.engine.store.repository;
 
-import org.rabix.engine.store.model.BackendRecord;
-
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
+import org.rabix.engine.store.model.BackendRecord;
 
 public interface BackendRepository {
 
@@ -21,8 +20,8 @@ public interface BackendRepository {
   
   void updateStatus(UUID id, BackendRecord.Status status);
 
-  void updateConfiguration(UUID id, Map<String, ?> backendConfiguration);
-
   Instant getHeartbeatInfo(UUID id);
+
+  void updateConfiguration(UUID id, String backendConfiguration);
 
 }

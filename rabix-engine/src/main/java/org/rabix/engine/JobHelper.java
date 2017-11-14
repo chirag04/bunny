@@ -94,23 +94,6 @@ public class JobHelper {
     return null;
   }
   
-  public Set<Job> createReadyJobs(UUID rootId, boolean setResources) {
-    Set<Job> jobs = new HashSet<>();
-    List<JobRecord> jobRecords = jobRecordService.findReady(rootId);
-
-    if (!jobRecords.isEmpty()) {
-      for (JobRecord job : jobRecords) {
-        try {
-          jobs.add(createReadyJob(job, JobStatus.READY, setResources));
-        } catch (BindingException e) {
-          logger.debug("Failed to create job", e);
-        }
-        
-      }
-    }
-    return jobs;
-  }
-  
   public Job createReadyJob(JobRecord jobRecord, JobStatus status, boolean setResources) throws BindingException {
     Job job = createJob(jobRecord, status, true);
     if (setResources) {
