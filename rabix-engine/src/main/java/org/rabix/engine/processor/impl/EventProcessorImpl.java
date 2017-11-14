@@ -23,6 +23,8 @@ import org.rabix.engine.processor.handler.EventHandlerException;
 import org.rabix.engine.processor.handler.HandlerFactory;
 import org.rabix.engine.service.ContextRecordService;
 import org.rabix.engine.service.JobService;
+import org.rabix.engine.status.EngineStatusCallback;
+import org.rabix.engine.status.EngineStatusCallbackException;
 import org.rabix.engine.store.model.ContextRecord;
 import org.rabix.engine.store.model.ContextRecord.ContextStatus;
 import org.rabix.engine.store.model.EventRecord;
@@ -60,18 +62,18 @@ public class EventProcessorImpl implements EventProcessor {
   private final TransactionHelper transactionHelper;
   private final JobRepository jobRepository;
   private final EventRepository eventRepository;
-  private final JobService jobService;
+  private final EngineStatusCallback callback;
   
   @Inject
   public EventProcessorImpl(HandlerFactory handlerFactory, ContextRecordService contextRecordService,
       TransactionHelper transactionHelper, EventRepository eventRepository,
-      JobRepository jobRepository, JobService jobService) {
+      JobRepository jobRepository, EngineStatusCallback callback) {
     this.handlerFactory = handlerFactory;
     this.contextRecordService = contextRecordService;
     this.transactionHelper = transactionHelper;
     this.eventRepository = eventRepository;
     this.jobRepository = jobRepository;
-    this.jobService = jobService;
+    this.callback = callback;
   }
 
   public void start() {
@@ -92,7 +94,11 @@ public class EventProcessorImpl implements EventProcessor {
                 }
                 if (checkForReadyJobs(eventReference.get())) {
                   Set<Job> readyJobs = jobRepository.getReadyJobsByGroupId(eventReference.get().getEventGroupId());
-                  jobService.handleJobsReady(readyJobs, eventReference.get().getContextId(), eventReference.get().getProducedByNode());  
+                  try {
+                    callback.onJobsReady(readyJobs, eventReference.get().getContextId(), eventReference.get().getProducedByNode());
+                  } catch (EngineStatusCallbackException e) {
+                    logger.error("Failed to ready jobs after event {}, error: {}", eventReference.get(), e);
+                  }  
                 }
                 eventRepository.deleteGroup(eventReference.get().getEventGroupId());
                 return null;
@@ -103,8 +109,8 @@ public class EventProcessorImpl implements EventProcessor {
             try {
               Job job = jobRepository.get(eventReference.get().getContextId());
               job = Job.cloneWithMessage(job, "EventProcessor failed to process event:\n" + eventReference.get().toString());
-              jobRepository.update(job);
-              jobService.handleJobRootFailed(job);
+//              jobRepository.update(job);
+              callback.onJobRootFailed(job);
             } catch (Exception ex) {
               logger.error("Failed to call jobFailed handler for job after event {} failed.", e, ex);
             }

@@ -1,8 +1,6 @@
 package org.rabix.engine.service.impl;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,43 +44,22 @@ public class JobServiceImpl implements JobService {
 
   private final EventProcessor eventProcessor;
   private final TransactionHelper transactionHelper;
-  private final MetricsHelper metricsHelper;
-
-  private boolean deleteFilesUponExecution;
-  private boolean isLocalBackend;
-
-  private IntermediaryFilesService intermediaryFilesService;
-
-  private Set<UUID> stoppingRootIds = new HashSet<>();
   private EngineStatusCallback engineStatusCallback;
-  private boolean setResources;
-
-  private JobHelper jobHelper;
 
   @Inject
-  public JobServiceImpl(EventProcessor eventProcessor,DAGNodeService dagNodeService,
-      AppService appService, JobRepository jobRepository, TransactionHelper transactionHelper,
-      EngineStatusCallback statusCallback, Configuration configuration,
-      IntermediaryFilesService intermediaryFilesService, JobHelper jobHelper, MetricsHelper metricsHelper) {
+  public JobServiceImpl(EventProcessor eventProcessor, DAGNodeService dagNodeService, AppService appService, JobRepository jobRepository,
+      TransactionHelper transactionHelper, EngineStatusCallback statusCallback, Configuration configuration, IntermediaryFilesService intermediaryFilesService,
+      JobHelper jobHelper, MetricsHelper metricsHelper) {
     this.dagNodeService = dagNodeService;
     this.appService = appService;
     this.eventProcessor = eventProcessor;
     this.jobRepository = jobRepository;
     this.transactionHelper = transactionHelper;
     this.engineStatusCallback = statusCallback;
-    this.intermediaryFilesService = intermediaryFilesService;
-    this.jobHelper = jobHelper;
-    this.metricsHelper = metricsHelper;
-
-    setResources = configuration.getBoolean("engine.set_resources", false);
   }
 
   @Override
   public void update(Job job) throws JobServiceException {
-    metricsHelper.time(() -> doUpdate(job), "JobServiceImpl.update");
-  }
-
-  private void doUpdate(Job job) {
     logger.debug("Update Job {}", job.getId());
     try {
       transactionHelper.doInTransaction((TransactionHelper.TransactionCallback<Void>) () -> {
@@ -99,7 +76,7 @@ public class JobServiceImpl implements JobService {
           case ABORTED:
             Job rootJob = jobRepository.get(job.getRootId());
             handleJobRootAborted(rootJob);
-            statusEvent = new JobStatusEvent(rootJob.getName(), rootJob.getRootId(), JobRecord.JobState.ABORTED, rootJob.getId(), rootJob.getName());
+            statusEvent = new JobStatusEvent(rootJob.getName(), rootJob.getRootId(), JobRecord.JobState.ABORTED, rootJob.getId(), job.getName());
             break;
           case COMPLETED:
             statusEvent = new JobStatusEvent(job.getName(), job.getRootId(), JobRecord.JobState.COMPLETED, job.getOutputs(), job.getId(), job.getName());
@@ -146,7 +123,8 @@ public class JobServiceImpl implements JobService {
           updatedJob = Job.cloneWithConfig(updatedJob, config);
           jobRepository.insert(updatedJob, updatedJob.getRootId(), null);
 
-          InitEvent initEvent = new InitEvent(rootId, updatedJob.getInputs(), updatedJob.getRootId(), updatedJob.getConfig(), dagHash, InternalSchemaHelper.ROOT_NAME);
+          InitEvent initEvent = new InitEvent(rootId, updatedJob.getInputs(), updatedJob.getRootId(), updatedJob.getConfig(), dagHash,
+              InternalSchemaHelper.ROOT_NAME);
           eventProcessor.persist(initEvent);
           eventWrapper.set(initEvent);
           jobWrapper.set(updatedJob);
@@ -168,14 +146,14 @@ public class JobServiceImpl implements JobService {
   public void stop(Job job) throws JobServiceException {
     logger.debug("Stop Job {}", job.getId());
 
-//    if (job.isRoot()) {
-//      Set<JobStatus> statuses = new HashSet<>();
-//      statuses.add(JobStatus.READY);
-//      statuses.add(JobStatus.PENDING);
-//      statuses.add(JobStatus.RUNNING);
-//      statuses.add(JobStatus.STARTED);
-//      jobRepository.updateStatus(job.getId(), JobStatus.ABORTED, statuses);
-//    }
+    // if (job.isRoot()) {
+    // Set<JobStatus> statuses = new HashSet<>();
+    // statuses.add(JobStatus.READY);
+    // statuses.add(JobStatus.PENDING);
+    // statuses.add(JobStatus.RUNNING);
+    // statuses.add(JobStatus.STARTED);
+    // jobRepository.updateStatus(job.getId(), JobStatus.ABORTED, statuses);
+    // }
     logger.info("Job {} rootId: {} stopped", job.getName(), job.getRootId());
   }
 
@@ -193,94 +171,7 @@ public class JobServiceImpl implements JobService {
   public void delete(UUID jobId) {
     // TODO think about it
   }
-  
-  @Override
-  public void handleJobsReady(Set<Job> jobs, UUID rootId, String producedByNode){
-    try {
-      engineStatusCallback.onJobsReady(jobs, rootId, producedByNode);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed", e);
-    }
-  }
 
-  @Override
-  public void handleJobFailed(final Job failedJob){
-    logger.warn("Job {}, rootId: {} failed: {}", failedJob.getName(), failedJob.getRootId(), failedJob.getMessage());
-    intermediaryFilesService.handleJobFailed(failedJob, jobRepository.get(failedJob.getRootId()));
-
-    try {
-      engineStatusCallback.onJobFailed(failedJob);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed", e);
-    }
-  }
-
-  @Override
-  public void handleJobContainerReady(Job containerJob) {
-    try {
-      engineStatusCallback.onJobContainerReady(containerJob);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed", e);
-    }
-  }
-
-  @Override
-  public void handleJobRootCompleted(Job job){
-    logger.info("Root job {} completed.", job.getId());
-    if (deleteFilesUponExecution) {
-      if (isLocalBackend) {
-        try {
-          Thread.sleep(FREE_RESOURCES_WAIT_TIME);
-        } catch (InterruptedException e) {
-        }
-      }
-    }
-
-    job = Job.cloneWithStatus(job, JobStatus.COMPLETED);
-    job = jobHelper.fillOutputs(job);
-    jobRepository.update(job);
-    try {
-      engineStatusCallback.onJobRootCompleted(job);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed", e);
-    }
-  }
-
-  @Override
-  public void handleJobRootFailed(Job job){
-    logger.warn("Root job {} failed.", job.getId());
-    synchronized (stoppingRootIds) {
-      if (deleteFilesUponExecution) {
-        if (isLocalBackend) {
-          try {
-            Thread.sleep(FREE_RESOURCES_WAIT_TIME);
-          } catch (InterruptedException e) {
-          }
-        }
-      }
-
-      job = Job.cloneWithStatus(job, JobStatus.FAILED);
-      jobRepository.update(job);
-      stoppingRootIds.remove(job.getId());
-    }
-    try {
-      engineStatusCallback.onJobRootFailed(job);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed", e);
-    }
-  }
-
-  @Override
-  public void handleJobRootPartiallyCompleted(UUID rootId, Map<String, Object> outputs, String producedBy){
-    logger.info("Root {} is partially completed.", rootId);
-    try{
-      engineStatusCallback.onJobRootPartiallyCompleted(rootId, outputs, producedBy);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed",e);
-    }
-  }
-
-  @Override
   public void handleJobRootAborted(Job rootJob) {
     logger.info("Root {} has been aborted", rootJob.getId());
 
@@ -293,16 +184,6 @@ public class JobServiceImpl implements JobService {
       engineStatusCallback.onJobRootAborted(rootJob);
     } catch (EngineStatusCallbackException e) {
       logger.error("Engine status callback failed", e);
-    }
-  }
-
-  @Override
-  public void handleJobCompleted(Job job){
-    logger.info("Job {} rootId: {} is completed.", job.getName(), job.getRootId());
-    try{
-      engineStatusCallback.onJobCompleted(job);
-    } catch (EngineStatusCallbackException e) {
-      logger.error("Engine status callback failed",e);
     }
   }
 }

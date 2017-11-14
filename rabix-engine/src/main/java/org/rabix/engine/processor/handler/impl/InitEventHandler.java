@@ -21,6 +21,7 @@ import org.rabix.engine.service.DAGNodeService;
 import org.rabix.engine.service.JobRecordService;
 import org.rabix.engine.service.JobStatsRecordService;
 import org.rabix.engine.service.VariableRecordService;
+import org.rabix.engine.status.EngineStatusCallback;
 import org.rabix.engine.store.model.ContextRecord;
 import org.rabix.engine.store.model.ContextRecord.ContextStatus;
 import org.rabix.engine.store.model.JobRecord;
@@ -40,17 +41,19 @@ public class InitEventHandler implements EventHandler<InitEvent> {
   private ContextRecordService contextRecordService;
   private VariableRecordService variableRecordService;
   private JobStatsRecordService jobStatsRecordService;
+  private EngineStatusCallback callback;
 
   @Inject
   public InitEventHandler(EventProcessor eventProcessor, JobRecordService jobRecordService,
       VariableRecordService variableRecordService, ContextRecordService contextRecordService,
-      DAGNodeService dagNodeService, JobStatsRecordService jobStatsRecordService) {
+      DAGNodeService dagNodeService, JobStatsRecordService jobStatsRecordService, EngineStatusCallback engineStatusCallback) {
     this.dagNodeService = dagNodeService;
     this.eventProcessor = eventProcessor;
     this.jobRecordService = jobRecordService;
     this.contextRecordService = contextRecordService;
     this.variableRecordService = variableRecordService;
     this.jobStatsRecordService = jobStatsRecordService;
+    this.callback = engineStatusCallback;
   }
 
   public void handle(final InitEvent event) throws EventHandlerException {

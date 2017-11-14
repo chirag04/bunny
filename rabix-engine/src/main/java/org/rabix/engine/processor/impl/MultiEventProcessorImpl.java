@@ -31,6 +31,7 @@ public class MultiEventProcessorImpl implements EventProcessor {
     for (int i = 0; i < eventProcessorCount; i++) {
       this.eventProcessors.put(i, singleEventProcessorProvider.get());
     }
+    start();
   }
 
   @Override

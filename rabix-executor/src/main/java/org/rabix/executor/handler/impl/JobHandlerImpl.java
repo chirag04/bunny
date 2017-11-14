@@ -4,16 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -40,8 +37,6 @@ import org.rabix.bindings.model.requirement.LocalContainerRequirement;
 import org.rabix.bindings.model.requirement.Requirement;
 import org.rabix.common.helper.ChecksumHelper.HashAlgorithm;
 import org.rabix.common.helper.CloneHelper;
-import org.rabix.common.service.download.DownloadService;
-import org.rabix.common.service.download.DownloadServiceException;
 import org.rabix.common.service.upload.UploadService;
 import org.rabix.common.service.upload.UploadServiceException;
 import org.rabix.executor.ExecutorException;
@@ -76,7 +71,6 @@ public class JobHandlerImpl implements JobHandler {
   private final HashAlgorithm hashAlgorithm;
   
   private final UploadService uploadService;
-  private final DownloadService downloadService;
   
   private final FilePathMapper inputFileMapper;
   private final FilePathMapper outputFileMapper;
@@ -99,7 +93,7 @@ public class JobHandlerImpl implements JobHandler {
   public JobHandlerImpl(
       @Assisted Job job, @Assisted EngineStub<?, ?, ?> engineStub, JobDataService jobDataService,
       StorageConfiguration storageConfig, DockerConfigation dockerConfig, FileConfiguration fileConfiguration,
-      WorkerStatusCallback statusCallback, CacheService cacheService, UploadService uploadService, DownloadService downloadService,
+      WorkerStatusCallback statusCallback, CacheService cacheService, UploadService uploadService,
       @InputFileMapper FilePathMapper inputFileMapper, @OutputFileMapper FilePathMapper outputFileMapper, ContainerHandlerFactory containerHandlerFactory) {
     this.job = job;
     this.engineStub = engineStub;
@@ -110,7 +104,6 @@ public class JobHandlerImpl implements JobHandler {
     this.cacheService = cacheService;
     this.workingDir = storageConfig.getWorkingDir(job);
     this.uploadService = uploadService;
-    this.downloadService = downloadService;
     this.inputFileMapper = inputFileMapper;
     this.outputFileMapper = outputFileMapper;
     this.enableHash = fileConfiguration.calculateFileChecksum();

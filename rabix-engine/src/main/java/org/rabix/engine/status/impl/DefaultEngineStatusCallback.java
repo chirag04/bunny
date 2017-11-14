@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.rabix.bindings.model.Job;
-import org.rabix.engine.service.BackendService;
+import org.rabix.engine.service.Scheduler;
 import org.rabix.engine.status.EngineStatusCallback;
 import org.rabix.engine.status.EngineStatusCallbackException;
 import org.slf4j.Logger;
@@ -18,29 +18,26 @@ public class DefaultEngineStatusCallback implements EngineStatusCallback {
   private final static Logger logger = LoggerFactory.getLogger(DefaultEngineStatusCallback.class);
   
   @Inject
-  private BackendService backendService;
+  private Scheduler scheduler;
   
   @Override
   public void onJobReady(Job job) throws EngineStatusCallbackException {
     logger.debug("onJobReady(jobId={})", job.getId());
-    backendService.sendToExecution(job);
   }
   
   @Override
   public void onJobsReady(Set<Job> jobs, UUID rootId, String producedByNode) throws EngineStatusCallbackException {
-    for (Job job : jobs) {
-      onJobReady(job);
-    }
+    scheduler.scheduleJobs(jobs);
   }
 
   @Override
-  public void onJobFailed(Job job) throws EngineStatusCallbackException {
-    logger.debug("onJobFailed(jobId={})", job.getId());
+  public void onJobFailed(String name, UUID rootId, String result) throws EngineStatusCallbackException {
+    logger.debug("onJobFailed(jobId={})", name);
   }
 
   @Override
-  public void onJobCompleted(Job job) throws EngineStatusCallbackException {
-    logger.debug("onJobCompleted(jobId={})", job.getId());
+  public void onJobCompleted(String name, UUID rootId, Object result) throws EngineStatusCallbackException {
+    logger.debug("onJobCompleted(jobId={})", name);
   }
   
   @Override
@@ -64,8 +61,9 @@ public class DefaultEngineStatusCallback implements EngineStatusCallback {
   }
 
   @Override
-  public void onJobContainerReady(Job rootJob) throws EngineStatusCallbackException {
-    logger.debug("onJobRootReady(jobId={})", rootJob.getId());
+  public void onJobRootRunning(UUID rootId) throws EngineStatusCallbackException {
+    // TODO Auto-generated method stub
+    
   }
 
 }

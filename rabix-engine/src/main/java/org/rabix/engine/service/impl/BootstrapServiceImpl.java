@@ -42,8 +42,6 @@ public class BootstrapServiceImpl implements BootstrapService {
   @Override
   public void start() throws BootstrapServiceException {
     try {
-      eventProcessor.start();
-      backendService.scanEmbedded();
       storeCleanupService.start();
     } catch (Exception e) {
       throw new BootstrapServiceException(e);
@@ -54,12 +52,6 @@ public class BootstrapServiceImpl implements BootstrapService {
   public void replay() throws BootstrapServiceException {
     try {
       transactionHelper.doInTransaction(() -> {
-        List<Backend> activeBackends = backendService.getActiveRemoteBackends();
-
-        for (Backend backend : activeBackends) {
-//          backendService.startBackend(backend);
-          logger.debug("Awakening backend: " + backend.getId());
-        }
         replayEvents();
         return null;
       });

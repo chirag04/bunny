@@ -1,7 +1,12 @@
 package org.rabix.engine;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.configuration.Configuration;
+import org.rabix.backend.api.WorkerService;
 import org.rabix.common.config.ConfigModule;
+import org.rabix.common.jvm.ClasspathScanner;
 import org.rabix.engine.metrics.MetricsModule;
 import org.rabix.engine.processor.EventProcessor;
 import org.rabix.engine.processor.handler.HandlerFactory;
@@ -13,6 +18,8 @@ import org.rabix.engine.processor.handler.impl.OutputEventHandler;
 import org.rabix.engine.processor.handler.impl.ScatterHandler;
 import org.rabix.engine.processor.impl.MultiEventProcessorImpl;
 import org.rabix.engine.service.AppService;
+import org.rabix.engine.service.BackendService;
+import org.rabix.engine.service.BackendServiceException;
 import org.rabix.engine.service.ContextRecordService;
 import org.rabix.engine.service.DAGNodeService;
 import org.rabix.engine.service.IntermediaryFilesService;
@@ -22,6 +29,7 @@ import org.rabix.engine.service.LinkRecordService;
 import org.rabix.engine.service.StoreCleanupService;
 import org.rabix.engine.service.VariableRecordService;
 import org.rabix.engine.service.impl.AppServiceImpl;
+import org.rabix.engine.service.impl.BackendServiceImpl;
 import org.rabix.engine.service.impl.ContextRecordServiceImpl;
 import org.rabix.engine.service.impl.DAGNodeServiceImpl;
 import org.rabix.engine.service.impl.IntermediaryFilesServiceImpl;
@@ -36,13 +44,24 @@ import org.rabix.engine.store.memory.InMemoryRepositoryRegistry;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryModule;
 import org.rabix.engine.store.postgres.jdbi.JDBIRepositoryRegistry;
 import org.rabix.engine.store.repository.TransactionHelper;
+import org.rabix.engine.stub.BackendStub;
+import org.rabix.engine.stub.BackendStubFactory;
+import org.rabix.engine.stub.impl.BackendStubFactoryImpl;
+import org.rabix.transport.backend.impl.BackendLocal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Named;
 
 public class EngineModule extends AbstractModule {
 
   ConfigModule config;
+
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
   public EngineModule(ConfigModule configModule) {
     config = configModule;
@@ -56,7 +75,7 @@ public class EngineModule extends AbstractModule {
     if (persistence.equals("POSTGRES")) {
       install(new JDBIRepositoryModule());
       bind(TransactionHelper.class).to(JDBIRepositoryRegistry.class).in(Scopes.SINGLETON);
-    } else if(persistence.equals("IN_MEMORY")) {
+    } else if (persistence.equals("IN_MEMORY")) {
       install(new InMemoryRepositoryModule());
       bind(TransactionHelper.class).to(InMemoryRepositoryRegistry.class).in(Scopes.SINGLETON);
     }
@@ -83,7 +102,9 @@ public class EngineModule extends AbstractModule {
     bind(HandlerFactory.class).in(Scopes.SINGLETON);
     bind(EventProcessor.class).to(MultiEventProcessorImpl.class).in(Scopes.SINGLETON);
 
+    bind(BackendStubFactory.class).to(BackendStubFactoryImpl.class).in(Scopes.SINGLETON);
+    bind(BackendService.class).to(BackendServiceImpl.class).in(Scopes.SINGLETON);
+
     install(new MetricsModule(configuration));
   }
-
 }

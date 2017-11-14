@@ -19,10 +19,10 @@ import org.rabix.executor.service.impl.JobDataServiceImpl;
 import org.rabix.executor.service.impl.JobFitterImpl;
 import org.rabix.executor.service.impl.MockWorkerServiceImpl;
 import org.rabix.executor.service.impl.WorkerServiceImpl;
-import org.rabix.executor.service.impl.WorkerServiceImpl.LocalWorker;
 
 import com.google.inject.Scopes;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.inject.multibindings.Multibinder;
 
 public class ExecutorModule extends BackendModule {
 
@@ -48,10 +48,12 @@ public class ExecutorModule extends BackendModule {
     }
     
     boolean mockBackendEnabled = configuration.getBoolean("backend.mock.enabled", false);
+    Multibinder<WorkerService> workerBinder = Multibinder.newSetBinder(binder(), WorkerService.class);
+
     if (mockBackendEnabled) {
-      bind(WorkerService.class).annotatedWith(LocalWorker.class).to(MockWorkerServiceImpl.class).in(Scopes.SINGLETON);
+      workerBinder.addBinding().to(MockWorkerServiceImpl.class).in(Scopes.SINGLETON);
     } else {
-      bind(WorkerService.class).annotatedWith(LocalWorker.class).to(WorkerServiceImpl.class).in(Scopes.SINGLETON);
+      workerBinder.addBinding().to(WorkerServiceImpl.class).in(Scopes.SINGLETON);
     }
     
     bind(DockerClientLockDecorator.class).in(Scopes.SINGLETON);

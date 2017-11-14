@@ -14,7 +14,7 @@ public class ExecutorHTTPServiceImpl implements ExecutorHTTPService {
   private final WorkerService executorService;
 
   @Inject
-  public ExecutorHTTPServiceImpl(@LocalWorker WorkerService executorService) {
+  public ExecutorHTTPServiceImpl(WorkerService executorService) {
     this.executorService = executorService;
   }
 

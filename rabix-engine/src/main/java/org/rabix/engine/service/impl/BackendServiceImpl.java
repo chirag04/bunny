@@ -1,18 +1,13 @@
 package org.rabix.engine.service.impl;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.Configuration;
-import org.rabix.backend.api.WorkerService;
 import org.rabix.bindings.model.Job;
 import org.rabix.common.json.BeanSerializer;
-import org.rabix.common.jvm.ClasspathScanner;
 import org.rabix.engine.service.BackendService;
 import org.rabix.engine.service.BackendServiceException;
 import org.rabix.engine.store.model.BackendRecord;
@@ -20,11 +15,11 @@ import org.rabix.engine.store.repository.BackendRepository;
 import org.rabix.engine.store.repository.TransactionHelper;
 import org.rabix.engine.store.repository.TransactionHelper.TransactionException;
 import org.rabix.engine.stub.BackendStub;
+import org.rabix.engine.stub.BackendStub.HeartbeatCallback;
 import org.rabix.engine.stub.BackendStubFactory;
 import org.rabix.transport.backend.Backend;
 import org.rabix.transport.backend.Backend.BackendStatus;
 import org.rabix.transport.backend.HeartbeatInfo;
-import org.rabix.transport.backend.impl.BackendLocal;
 import org.rabix.transport.backend.impl.BackendRabbitMQ;
 import org.rabix.transport.backend.impl.BackendRabbitMQ.BackendConfiguration;
 import org.rabix.transport.backend.impl.BackendRabbitMQ.EngineConfiguration;
@@ -36,61 +31,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 
 public class BackendServiceImpl implements BackendService {
 
   private final static Logger logger = LoggerFactory.getLogger(BackendServiceImpl.class);
-
-  private Set<BackendStub> backendStubs;
 
   private final BackendStubFactory backendStubFactory;
   private final TransactionHelper transactionHelper;
   private final Configuration configuration;
   
   private final BackendRepository backendRepository;
-  
-  private final Injector injector;
-
   private ReceiveCallback<Job> jobReceiver;
+  private HeartbeatCallback heartBeatReceiver;
   private ErrorCallback errorCallback;
   
   @Inject
   public BackendServiceImpl(BackendStubFactory backendStubFactory,
-      TransactionHelper transactionHelper, BackendRepository backendRepository, Configuration configuration, Injector injector, ReceiveCallback<Job> jobReceiver) {
-    this.injector = injector;;
+      TransactionHelper transactionHelper, BackendRepository backendRepository, Configuration configuration, ReceiveCallback<Job> jobReceiver,  HeartbeatCallback heartBeatReceiver, ErrorCallback errorCallback) {
     this.backendStubFactory = backendStubFactory;
     this.transactionHelper = transactionHelper;
     this.configuration = configuration;
     this.backendRepository = backendRepository;
-    this.backendStubs = Collections.synchronizedSet(new HashSet<>());
     this.jobReceiver = jobReceiver;
-    this.errorCallback = (Exception e)->{
-      
-    };
+    this.heartBeatReceiver = heartBeatReceiver;
+    this.errorCallback = errorCallback;
   }
-  
-  @Override
-  public void scanEmbedded() {
-    Set<Class<WorkerService>> clazzes = ClasspathScanner.<WorkerService>scanInterfaceImplementations(WorkerService.class);
-
-    int prefix = 1;
-    for (Class<WorkerService> clazz : clazzes) {
-      try {
-        WorkerService backendAPI = clazz.newInstance();
-        if (isEnabled(backendAPI.getType())) {
-          injector.injectMembers(backendAPI);
-          BackendLocal backendLocal = new BackendLocal(Integer.toString(prefix++));
-          create(backendLocal);
-          startBackend(backendLocal);
-          backendAPI.start(backendLocal);
-        }
-      } catch (InstantiationException | IllegalAccessException | BackendServiceException e) {
-        logger.error("Failed to register backend " + clazz, e);
-      }
-    }
-  }
-  
+    
   @Override
   @SuppressWarnings("unchecked")
   public <T extends Backend> T create(T backend) throws BackendServiceException {
@@ -120,16 +86,11 @@ public class BackendServiceImpl implements BackendService {
     }
   }
   
-  public void startBackend(Backend backend) throws BackendServiceException {
+  public BackendStub<?, ?, ?> startBackend(Backend backend) throws BackendServiceException {
     try {
-      backendRepository.updateStatus(backend.getId(), BackendRecord.Status.ACTIVE);
-      updateHeartbeatInfo(backend.getId(), Instant.now());
       BackendStub<?, ?, ?> backendStub = backendStubFactory.create(backend);
-      
-      backendStub.start(info -> {
-        updateHeartbeatInfo(backendStub.getBackend().getId(), Instant.ofEpochMilli(info.getTimestamp()));
-      }, jobReceiver, errorCallback);
-      this.backendStubs.add(backendStub);
+      backendStub.start(heartBeatReceiver, jobReceiver, errorCallback);
+      return backendStub;
     } catch (TransportPluginException e) {
       throw new BackendServiceException(e);
     }
@@ -241,21 +202,4 @@ public class BackendServiceImpl implements BackendService {
     }).collect(Collectors.toList());
   }
 
-  @Override
-  public boolean isEnabled(String type) {
-    String[] backendTypes = configuration.getStringArray(BACKEND_TYPES_KEY);
-    for (String backendType : backendTypes) {
-      if (backendType.trim().equalsIgnoreCase(type)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public void sendToExecution(Job job) {
-    synchronized (backendStubs) {
-      backendStubs.iterator().next().send(job);
-    }
-  }
 }

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.rabix.backend.api.BackendModule;
+import org.rabix.backend.api.WorkerService;
 import org.rabix.backend.api.callback.WorkerStatusCallback;
 import org.rabix.backend.api.callback.impl.NoOpWorkerStatusCallback;
 import org.rabix.bindings.BindingException;
@@ -42,48 +44,47 @@ import org.rabix.bindings.model.ApplicationPort;
 import org.rabix.bindings.model.DataType;
 import org.rabix.bindings.model.FileValue;
 import org.rabix.bindings.model.Job;
-import org.rabix.bindings.model.Job.JobStatus;
 import org.rabix.bindings.model.Resources;
-import org.rabix.cli.service.LocalDownloadServiceImpl;
+import org.rabix.cli.service.LocalEngineStatusCallback;
 import org.rabix.common.config.ConfigModule;
 import org.rabix.common.helper.JSONHelper;
 import org.rabix.common.json.BeanSerializer;
 import org.rabix.common.jvm.ClasspathScanner;
 import org.rabix.common.logging.VerboseLogger;
-import org.rabix.common.service.download.DownloadService;
 import org.rabix.common.service.upload.UploadService;
 import org.rabix.common.service.upload.impl.NoOpUploadServiceImpl;
 import org.rabix.engine.EngineModule;
 import org.rabix.engine.service.BackendService;
+import org.rabix.engine.service.BackendServiceException;
 import org.rabix.engine.service.BootstrapService;
 import org.rabix.engine.service.BootstrapServiceException;
-import org.rabix.engine.service.ContextRecordService;
 import org.rabix.engine.service.IntermediaryFilesHandler;
-import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.JobService;
 import org.rabix.engine.service.JobServiceException;
-import org.rabix.engine.service.impl.BackendServiceImpl;
+import org.rabix.engine.service.Scheduler;
 import org.rabix.engine.service.impl.BootstrapServiceImpl;
 import org.rabix.engine.service.impl.IntermediaryFilesLocalHandler;
-import org.rabix.engine.service.impl.IntermediaryFilesServiceImpl;
 import org.rabix.engine.service.impl.JobReceiverImpl;
 import org.rabix.engine.service.impl.JobServiceImpl;
 import org.rabix.engine.service.impl.NoOpIntermediaryFilesServiceHandler;
+import org.rabix.engine.service.impl.SingleBackendScheduler;
 import org.rabix.engine.status.EngineStatusCallback;
-import org.rabix.engine.status.impl.DefaultEngineStatusCallback;
-import org.rabix.engine.store.model.ContextRecord;
-import org.rabix.engine.stub.BackendStubFactory;
-import org.rabix.engine.stub.impl.BackendStubFactoryImpl;
+import org.rabix.engine.stub.BackendStub;
+import org.rabix.engine.stub.BackendStub.HeartbeatCallback;
+import org.rabix.transport.backend.HeartbeatInfo;
+import org.rabix.transport.backend.impl.BackendLocal;
+import org.rabix.transport.mechanism.TransportPlugin.ErrorCallback;
 import org.rabix.transport.mechanism.TransportPlugin.ReceiveCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
 
 /**
  * Local command line executor
@@ -234,8 +235,38 @@ public class BackendCommandLine {
       final ConfigModule configModule = new ConfigModule(configDir, configOverrides);
       Configuration configuration = configModule.provideConfig();
       Injector injector = Guice.createInjector(
-          new EngineModule(configModule),
           new AbstractModule() {
+            public boolean isEnabled(String type, Configuration configuration) {
+              String[] backendTypes = configuration.getStringArray( "backend.embedded.types");
+              for (String backendType : backendTypes) {
+                if (backendType.trim().equalsIgnoreCase(type)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+            
+            @SuppressWarnings("rawtypes")
+            @Provides
+            @Named("allBackends")
+            public Set<BackendStub> scanEmbedded(Set<WorkerService> backendAPIs, BackendService backendService, Configuration configuration) {
+              Set<BackendStub> backends = new HashSet<>();
+              int prefix = 1;
+              for (WorkerService backendAPI : backendAPIs) {
+                try {
+                  if (isEnabled(backendAPI.getType(), configuration)) {
+                    BackendLocal backendLocal = new BackendLocal(Integer.toString(prefix++));
+                    BackendStub<?, ?, ?> stub = backendService.startBackend(backendLocal);
+                    backendAPI.start(backendLocal);
+                    backends.add(stub);
+                  }
+                } catch (BackendServiceException e) {
+                  logger.error("Failed to register backend " + backendAPI.getType(), e);
+                }
+              }
+              return backends;
+            }
+            
             @Override
             protected void configure() {
               install(configModule);
@@ -246,14 +277,13 @@ public class BackendCommandLine {
                 bind(IntermediaryFilesHandler.class).to(NoOpIntermediaryFilesServiceHandler.class).in(Scopes.SINGLETON);
               }
               bind(JobService.class).to(JobServiceImpl.class).in(Scopes.SINGLETON);
-              bind(BackendService.class).to(BackendServiceImpl.class).in(Scopes.SINGLETON);
-              bind(EngineStatusCallback.class).to(DefaultEngineStatusCallback.class).in(Scopes.SINGLETON);
-              bind(DownloadService.class).to(LocalDownloadServiceImpl.class).in(Scopes.SINGLETON);
+              bind(EngineStatusCallback.class).to(LocalEngineStatusCallback.class).in(Scopes.SINGLETON);
               bind(UploadService.class).to(NoOpUploadServiceImpl.class).in(Scopes.SINGLETON);
               bind(WorkerStatusCallback.class).to(NoOpWorkerStatusCallback.class).in(Scopes.SINGLETON);
-
-              bind(BackendStubFactory.class).to(BackendStubFactoryImpl.class).in(Scopes.SINGLETON);
               bind(new TypeLiteral<ReceiveCallback<Job>>(){}).to(JobReceiverImpl.class).in(Scopes.SINGLETON);
+              bind(HeartbeatCallback.class).toInstance((HeartbeatInfo info) -> {    });
+              bind(ErrorCallback.class).toInstance((Exception e)->{});
+              bind(Scheduler.class).to(SingleBackendScheduler.class).in(Scopes.SINGLETON);
               
               Set<Class<BackendModule>> backendModuleClasses = ClasspathScanner.<BackendModule>scanSubclasses(BackendModule.class);
               for (Class<BackendModule> backendModuleClass : backendModuleClasses) {
@@ -266,7 +296,8 @@ public class BackendCommandLine {
               }
               bind(BootstrapService.class).to(BootstrapServiceImpl.class).in(Scopes.SINGLETON);
             }
-          });
+          },
+          new EngineModule(configModule));
 
       // Load app from JSON
       Bindings bindings = null;
@@ -396,7 +427,6 @@ public class BackendCommandLine {
       final BootstrapService bootstrapService = injector.getInstance(BootstrapService.class);
       
       final JobService jobService = injector.getInstance(JobService.class);
-      final ContextRecordService contextRecordService = injector.getInstance(ContextRecordService.class);
       
       bootstrapService.start();
       Object commonInputs = null;
@@ -407,53 +437,14 @@ public class BackendCommandLine {
         System.exit(10);
       }
       
-      final Job job = jobService.start(new Job(fullUri, (Map<String, Object>) commonInputs), contextConfig);
-
-      final Bindings finalBindings = bindings;
-      Thread checker = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          ContextRecord contextRecord = contextRecordService.find(job.getId());
-          
-          while (contextRecord == null || contextRecord.getStatus().equals(ContextRecord.ContextStatus.RUNNING)) {
-            try {
-              Thread.sleep(1000);
-              contextRecord = contextRecordService.find(job.getId());
-            } catch (InterruptedException e) {
-              logger.error("Failed to wait for root Job to finish", e);
-              throw new RuntimeException(e);
-            }
-          }
-          Job rootJob = jobService.get(job.getId());
-          if (rootJob.getStatus().equals(JobStatus.COMPLETED)) {
-            try {
-              try {
-                Map<String, Object> outputs = (Map<String, Object>) finalBindings.translateToSpecific(rootJob.getOutputs());
-                System.out.println(JSONHelper.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(outputs));
-                System.exit(0);
-              } catch (BindingException e) {
-                logger.error("Failed to translate common outputs to native", e);
-                throw new RuntimeException(e);
-              }
-            } catch (JsonProcessingException e) {
-              logger.error("Failed to write outputs to standard out", e);
-              System.exit(10);
-            }
-          } else {
-            VerboseLogger.log("Failed to execute a Job");
-            System.exit(10);
-          }
-        }
-      });
-      checker.start();
-      checker.join();
+      jobService.start(new Job(fullUri, (Map<String, Object>) commonInputs), contextConfig);
     } catch (ParseException e) {
       logger.error("Encountered an error while parsing using Posix parser.", e);
       System.exit(10);
     } catch (IOException e) {
       logger.error("Encountered an error while reading a file.", e);
       System.exit(10);
-    } catch (JobServiceException | InterruptedException | BootstrapServiceException | URISyntaxException e) {
+    } catch (JobServiceException | BootstrapServiceException | URISyntaxException e) {
       logger.error("Encountered an error while starting local backend.", e);
       System.exit(10);
     }
