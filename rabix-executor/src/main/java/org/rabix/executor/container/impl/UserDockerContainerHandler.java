@@ -162,7 +162,7 @@ public class UserDockerContainerHandler implements ContainerHandler {
     try {
       pull(dockerPull);
       UserBuilder builder = new UserBuilder();
-      builder.image(dockerResource.getDockerPull().split(":")[1]);
+      builder.image(dockerResource.getDockerPull());
 
       FileValueHelper.getInputFiles(job).forEach(f -> {
         builder.volume(URI.create(f.getLocation()).getPath() + ":" + f.getPath());
@@ -215,14 +215,15 @@ public class UserDockerContainerHandler implements ContainerHandler {
       }
 
       builder.env(transformEnvironmentVariables(environmentVariables));
-      String shFile = "/tmp/" + job.getId() + ".sh";
-      Files.write(Paths.get(shFile), ("/bin/sh -c \"" + commandLine + "\"").getBytes());
+      String shFile = job.getId() + ".sh";
+      Files.write(workingDir.toPath().resolve(shFile), ("/bin/sh -c \"" + commandLine + "\"").getBytes());
       builder.cmd("/bin/sh " + shFile);
       ProcessBuilder processBuilder = new ProcessBuilder();
       processBuilder.command(builder.build().split(" "));
       Process process = processBuilder.start();
       process.waitFor();
       running = false;
+      Files.delete(workingDir.toPath().resolve(shFile));
     } catch (Exception e) {
       logger.error("Failed to start container.", e);
       throw new ContainerException("Failed to start container.", e);
