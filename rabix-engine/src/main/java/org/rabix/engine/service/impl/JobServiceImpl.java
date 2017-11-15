@@ -125,7 +125,7 @@ public class JobServiceImpl implements JobService {
 
           InitEvent initEvent = new InitEvent(rootId, updatedJob.getInputs(), updatedJob.getRootId(), updatedJob.getConfig(), dagHash,
               InternalSchemaHelper.ROOT_NAME);
-          eventProcessor.persist(initEvent);
+//          eventProcessor.persist(initEvent);
           eventWrapper.set(initEvent);
           jobWrapper.set(updatedJob);
           isSuccessful.set(true);
