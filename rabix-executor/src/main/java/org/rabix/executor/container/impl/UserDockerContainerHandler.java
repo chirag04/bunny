@@ -1,13 +1,9 @@
 package org.rabix.executor.container.impl;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,11 +13,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.rabix.backend.api.callback.WorkerStatusCallback;
 import org.rabix.bindings.Bindings;
@@ -40,10 +42,6 @@ import org.rabix.executor.handler.JobHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.spotify.docker.client.LogStream;
-import com.spotify.docker.client.exceptions.DockerException;
-
 /**
  * Docker based implementation of {@link ContainerHandler}
  */
@@ -53,52 +51,35 @@ public class UserDockerContainerHandler implements ContainerHandler {
 
   public static final String DIRECTORY_MAP_MODE = "rw";
 
+  public static final String EXECUTOR_OVERRIDE_COMMAND = "executor.override.command";
+  public static final String EXECUTOR_OVERRIDE_SETUP = "executor.override.setup";
+
   public static final String HOME_ENV_VAR = "HOME";
   public static final String TMPDIR_ENV_VAR = "TMPDIR";
-
-  private static final String TAG_SEPARATOR = ":";
-  private static final String LATEST = "latest";
   private static final String SEPARATOR = " ";
 
-  private String containerId;
   private final Job job;
   private final DockerContainerRequirement dockerResource;
   private final File workingDir;
   private Integer overrideResultStatus = null;
 
+  private Future<Integer> processFuture;
+  private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
   private String commandLine;
 
   private final String dockerOverride;
-  private boolean running;
-  private String pullCommand;
+  private final String dockerOverrideSetup;
+  private String errorLog;
+
 
   public UserDockerContainerHandler(Job job, Configuration configuration, DockerContainerRequirement dockerResource, StorageConfiguration storageConfig,
-      DockerConfigation dockerConfig, WorkerStatusCallback statusCallback, String override) throws ContainerException {
+      DockerConfigation dockerConfig, WorkerStatusCallback statusCallback) throws ContainerException {
     this.job = job;
     this.dockerResource = dockerResource;
     this.workingDir = storageConfig.getWorkingDir(job);
-    this.dockerOverride = override;
-    this.pullCommand = configuration.getString("executor.override.pull");
-  }
-
-  private void pull(String image) throws ContainerException {
-    if (pullCommand != null) {
-      ProcessBuilder processBuilder = new ProcessBuilder();
-      String replaced = pullCommand.replace("{image}", image);
-      processBuilder.command(replaced.split(SEPARATOR));
-      Process pull;
-      try {
-        pull = processBuilder.start();
-        pull.waitFor();
-      } catch (IOException | InterruptedException e) {
-        logger.error("Failed to pull image with command: {}", replaced, e);
-      }
-    }
-  }
-
-  private String checkTagOrAddLatest(String image) {
-    return image.contains(TAG_SEPARATOR) ? image : image + TAG_SEPARATOR + LATEST;
+    this.dockerOverride = configuration.getString(EXECUTOR_OVERRIDE_COMMAND);
+    this.dockerOverrideSetup = configuration.getString(EXECUTOR_OVERRIDE_SETUP);
   }
 
   private class UserBuilder {
@@ -133,8 +114,8 @@ public class UserDockerContainerHandler implements ContainerHandler {
       return this;
     }
 
-    public String build() {
-      String out = dockerOverride;
+    public String build(String base) {
+      String out = base;
       out = match(out, "image", Collections.singleton(image));
       out = match(out, "vols", volumes);
       out = match(out, "envs", env);
@@ -144,23 +125,20 @@ public class UserDockerContainerHandler implements ContainerHandler {
     }
 
     private String match(String value, String name, Collection<String> col) {
-      Pattern pattern = Pattern.compile("(\\{([^\\|\\{]*)\\|?" + name + "\\})");
+      Pattern pattern = Pattern.compile("\\{" + name + "(\\|prefix:(\\S*))?\\}");
       Matcher matcher = pattern.matcher(value);
       if (!matcher.find())
         return value;
       String prefix = matcher.group(2);
       final StringBuilder prefixed = new StringBuilder();
-      col.forEach(v -> prefixed.append(prefix + SEPARATOR + v + SEPARATOR));
+      col.forEach(v -> prefixed.append((prefix == null ? "" : prefix + SEPARATOR) + v + SEPARATOR));
       return value.replaceAll(pattern.pattern(), prefixed.toString().trim());
     }
   }
 
   @Override
   public void start() throws ContainerException {
-    String dockerPull = checkTagOrAddLatest(dockerResource.getDockerPull());
-
     try {
-      pull(dockerPull);
       UserBuilder builder = new UserBuilder();
       builder.image(dockerResource.getDockerPull());
 
@@ -179,8 +157,6 @@ public class UserDockerContainerHandler implements ContainerHandler {
       commandLine = bindings.buildCommandLineObject(job, workingDir, (String path, Map<String, Object> config) -> {
         return path;
       }).build();
-
-      // commandLine = addEntrypoint(entrypoint, commandLine); TODO:entrypoint overwrite
 
       if (StringUtils.isEmpty(commandLine.trim())) {
         overrideResultStatus = 0; // default is success
@@ -215,15 +191,31 @@ public class UserDockerContainerHandler implements ContainerHandler {
       }
 
       builder.env(transformEnvironmentVariables(environmentVariables));
-      String shFile = job.getId() + ".sh";
-      Files.write(workingDir.toPath().resolve(shFile), ("/bin/sh -c \"" + commandLine + "\"").getBytes());
-      builder.cmd("/bin/sh " + shFile);
+      builder.cmd(commandLine);
+
+      if (dockerOverrideSetup != null) {
+        Process setup = new ProcessBuilder().command("/bin/sh", "-c", builder.build(dockerOverrideSetup)).start();
+        setup.waitFor();
+        if (setup.exitValue() != 0) {
+          logger.error("Setup script encountered an error: {}", IOUtils.readLines(setup.getErrorStream()));
+        }
+      }
+
       ProcessBuilder processBuilder = new ProcessBuilder();
-      processBuilder.command(builder.build().split(" "));
-      Process process = processBuilder.start();
-      process.waitFor();
-      running = false;
-      Files.delete(workingDir.toPath().resolve(shFile));
+      processBuilder.command("/bin/sh", "-c", builder.build(dockerOverride));
+
+      processFuture = executorService.submit(new Callable<Integer>() {
+        @Override
+        public Integer call() throws Exception {
+          Process process = processBuilder.start();
+          process.waitFor();
+          List<String> lines = IOUtils.readLines(process.getErrorStream());
+          if (lines != null && !lines.isEmpty()) {
+            errorLog = lines.stream().reduce("", (a, b) -> a + b);
+          }
+          return process.exitValue();
+        }
+      });
     } catch (Exception e) {
       logger.error("Failed to start container.", e);
       throw new ContainerException("Failed to start container.", e);
@@ -240,21 +232,6 @@ public class UserDockerContainerHandler implements ContainerHandler {
     }
     return commandLine;
   }
-
-  // private String addEntrypoint(List<String> entrypoint, String commandLine) {
-  // if (entrypoint != null && !entrypoint.isEmpty()) {
-  // String entryPointString = null;
-  // for (String part : entrypoint) {
-  // if (entryPointString == null) {
-  // entryPointString = part + " ";
-  // } else {
-  // entryPointString = entryPointString + part + SEPARATOR;
-  // }
-  // }
-  // commandLine = entryPointString + commandLine;
-  // }
-  // return commandLine;
-  // }
 
   private List<String> transformEnvironmentVariables(Map<String, String> variables) {
     List<String> transformed = new ArrayList<>();
@@ -275,58 +252,33 @@ public class UserDockerContainerHandler implements ContainerHandler {
   }
 
   @Override
-  public void stop() throws ContainerException {
-    // if (overrideResultStatus != null) {
-    // return;
-    // }
-    // try {
-    // dockerClient.stopContainer(containerId, 0);
-    // } catch (Exception e) {
-    // logger.error("Docker container " + containerId + " failed to stop", e);
-    // throw new ContainerException("Docker container " + containerId + " failed to stop");
-    // }
-  }
-
-  @JsonIgnore
-  public boolean isStarted() throws ContainerException {
-    // if (overrideResultStatus != null) {
-    // return true;
-    // }
-    // ContainerInfo containerInfo;
-    // try {
-    // containerInfo = dockerClient.inspectContainer(containerId);
-    // ContainerState containerState = containerInfo.state();
-    // Date startedDate = containerState.startedAt();
-    // return startedDate != null;
-    // } catch (Exception e) {
-    // logger.error("Failed to query docker. Container ID: " + containerId, e);
-    // throw new ContainerException("Failed to query docker. Container ID: " + containerId);
-    // }
-    return true;
+  public synchronized void stop() throws ContainerException {
+    if (processFuture == null) {
+      return;
+    }
+    processFuture.cancel(true);
   }
 
   @Override
-  @JsonIgnore
-  public boolean isRunning() throws ContainerException {
-    return running;
+  public synchronized boolean isStarted() throws ContainerException {
+    return processFuture != null;
   }
 
   @Override
-  @JsonIgnore
-  public int getProcessExitStatus() throws ContainerException {
-    // if (overrideResultStatus != null) {
-    // return overrideResultStatus;
-    // }
-    // ContainerInfo containerInfo;
-    // try {
-    // containerInfo = dockerClient.inspectContainer(containerId);
-    // ContainerState containerState = containerInfo.state();
-    // return containerState.exitCode();
-    // } catch (Exception e) {
-    // logger.error("Failed to query docker. Container ID: " + containerId, e);
-    // throw new ContainerException("Failed to query docker. Container ID: " + containerId);
-    // }
-    return 0;
+  public synchronized boolean isRunning() throws ContainerException {
+    if (processFuture == null) {
+      return false;
+    }
+    return !processFuture.isDone();
+  }
+
+  @Override
+  public synchronized int getProcessExitStatus() throws ContainerException {
+    try {
+      return processFuture.get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new ContainerException(e);
+    }
   }
 
   /**
@@ -341,10 +293,10 @@ public class UserDockerContainerHandler implements ContainerHandler {
 
     if (logFile != null) {
       try {
-        dumpLog(containerId, logFile);
+        Files.write(logFile.toPath(), errorLog == null ? new byte[] {} : errorLog.getBytes());
       } catch (Exception e) {
-        logger.error("Docker container " + containerId + " failed to create log file", e);
-        throw new ContainerException("Docker container " + containerId + " failed to create log file");
+        logger.error("Failed to create log file", e);
+        throw new ContainerException("Failed to create log file");
       }
     }
   }
@@ -352,54 +304,6 @@ public class UserDockerContainerHandler implements ContainerHandler {
   @Override
   public void removeContainer() {
 
-  }
-
-  /**
-   * Helper method for dumping error logs from Docker to file
-   */
-  public void dumpLog(String containerId, File logFile) throws DockerException, InterruptedException {
-    LogStream errorStream = null;
-
-    FileChannel fileChannel = null;
-    FileOutputStream fileOutputStream = null;
-    try {
-      if (logFile.exists()) {
-        logFile.delete();
-      }
-      logFile.createNewFile();
-
-      fileOutputStream = new FileOutputStream(logFile);
-      fileChannel = fileOutputStream.getChannel();
-
-      // errorStream = dockerClient.logs(containerId, LogsParam.stderr());
-      // while (errorStream.hasNext()) {
-      // LogMessage message = errorStream.next();
-      // ByteBuffer buffer = message.content();
-      // fileChannel.write(buffer);
-      // }
-    } catch (FileNotFoundException e) {
-      throw new DockerException("File " + logFile + " not found");
-    } catch (IOException e) {
-      throw new DockerException(e);
-    } finally {
-      if (errorStream != null) {
-        errorStream.close();
-      }
-      if (fileChannel != null) {
-        try {
-          fileChannel.close();
-        } catch (IOException e) {
-          logger.error("Failed to close file channel", e);
-        }
-      }
-      if (fileOutputStream != null) {
-        try {
-          fileOutputStream.close();
-        } catch (IOException e) {
-          logger.error("Failed to close file output stream", e);
-        }
-      }
-    }
   }
 
 
