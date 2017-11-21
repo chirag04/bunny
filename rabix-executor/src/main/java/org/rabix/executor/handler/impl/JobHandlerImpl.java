@@ -411,6 +411,16 @@ public class JobHandlerImpl implements JobHandler {
       throw new ExecutorException("Couldn't get process exit value.", e);
     }
   }
+  
+  @Override
+  public String getErrorLog() throws ExecutorException {
+    logger.debug("getExitStatus()");
+    try {
+      return containerHandler.getProcessExitMessage();
+    } catch (ContainerException e) {
+      throw new ExecutorException("Couldn't get process exit value.", e);
+    }
+  }
 
   @Override
   public boolean isSuccessful() throws ExecutorException {

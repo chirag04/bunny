@@ -585,7 +585,7 @@ public class DockerContainerHandler implements ContainerHandler {
       }
       return images != null ? images.contains(dockerPull) : false;
     }
-    
+
     public synchronized ImageInfo inspectImage(String dockerPull) throws DockerException, InterruptedException {
       return dockerClient.inspectImage(dockerPull);
     }
@@ -683,6 +683,15 @@ public class DockerContainerHandler implements ContainerHandler {
       FileUtils.writeStringToFile(commandLineFile, commandLine);
     } catch (IOException e) {
       logger.error("Failed to dump command line into " + JobHandler.COMMAND_LOG);
+      throw new ContainerException(e);
+    }
+  }
+
+  @Override
+  public String getProcessExitMessage() throws ContainerException {
+    try {
+      return this.dockerClient.logs(containerId, LogsParam.stderr()).readFully();
+    } catch (DockerException | InterruptedException e) {
       throw new ContainerException(e);
     }
   }

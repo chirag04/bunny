@@ -241,6 +241,11 @@ public class LocalContainerHandler implements ContainerHandler {
   }
 
   @Override
-  public void removeContainer() {
+  public void removeContainer() {}
+
+  @Override
+  public String getProcessExitMessage() throws ContainerException {
+    // TODO Auto-generated method stub
+    return null;
   }
 }
