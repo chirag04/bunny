@@ -17,11 +17,8 @@ public class TESTaskLogs {
   @JsonProperty("outputs")
   private List<Map<String, String>> outputs;
 
-  public TESTaskLogs(@JsonProperty("logs") List<TESExecutorLog> logs,
-                     @JsonProperty("metadata") Map<String, String> metadata,
-                     @JsonProperty("start_time") String startTime,
-                     @JsonProperty("end_time") String endTime,
-                     @JsonProperty("outputs") List<Map<String, String>> outputs) {
+  public TESTaskLogs(@JsonProperty("logs") List<TESExecutorLog> logs, @JsonProperty("metadata") Map<String, String> metadata, @JsonProperty("start_time") String startTime, @JsonProperty("end_time") String endTime,
+      @JsonProperty("outputs") List<Map<String, String>> outputs) {
     super();
     this.logs = logs;
     this.metadata = metadata;
@@ -34,7 +31,9 @@ public class TESTaskLogs {
     return logs;
   }
 
-  public Map<String, String> getMetadata() { return metadata; }
+  public Map<String, String> getMetadata() {
+    return metadata;
+  }
 
   public String getStartTime() {
     return startTime;

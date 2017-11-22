@@ -38,18 +38,20 @@ public class LocalTESStorageServiceImpl implements TESStorageService {
 
   @Inject
   public LocalTESStorageServiceImpl(Configuration configuration) {
-    if (configuration.containsKey(AmazonS3Factory.ACCESS_KEY) && configuration.containsKey(AmazonS3Factory.SECRET_KEY)) {
-      Map<String, ?> env = ImmutableMap.<String, Object>builder().put(AmazonS3Factory.ACCESS_KEY, configuration.getString(AmazonS3Factory.ACCESS_KEY))
-          .put(AmazonS3Factory.SECRET_KEY, configuration.getString(AmazonS3Factory.SECRET_KEY)).build();
-      try {
-        FileSystem newFileSystem = FileSystems.newFileSystem(URI.create("s3:/"), env, Thread.currentThread().getContextClassLoader());
-      } catch (IOException e) {
-        logger.error("Failed to register s3 filesystem");
+    localFileStorage = Paths.get(configuration.getString("backend.execution.directory"));
+    String storageConfig = configuration.getString("rabix.tes.storage.base", localFileStorage.toString());
+    if (storageConfig.startsWith("s3")) {
+      if (configuration.containsKey(AmazonS3Factory.ACCESS_KEY) && configuration.containsKey(AmazonS3Factory.SECRET_KEY)) {
+        Map<String, ?> env = ImmutableMap.<String, Object>builder().put(AmazonS3Factory.ACCESS_KEY, configuration.getString(AmazonS3Factory.ACCESS_KEY))
+            .put(AmazonS3Factory.SECRET_KEY, configuration.getString(AmazonS3Factory.SECRET_KEY)).build();
+        try {
+          FileSystem newFileSystem = FileSystems.newFileSystem(URI.create(storageConfig), env, Thread.currentThread().getContextClassLoader());
+        } catch (IOException e) {
+          logger.error("Failed to register s3 filesystem");
+        }
       }
     }
-    
-    localFileStorage = Paths.get(configuration.getString("backend.execution.directory"));
-    URI uri = URI.create(configuration.getString("rabix.tes.storage.base", localFileStorage.toString()));
+    URI uri = URI.create(storageConfig);
     if (uri.getScheme() == null) {
       try {
         uri = new URI("file", uri.toString(), null);
