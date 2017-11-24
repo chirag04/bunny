@@ -268,7 +268,12 @@ public class CWLDocumentResolver {
 
     if (isInclude) {
       String path = currentNode.get(RESOLVER_REFERENCE_INCLUDE_KEY).textValue();
-      String content = loadContents(file, path);
+      String content;
+      try {
+        content = loadContents(file, path);
+      } catch (IOException e) {
+        throw new BindingException(e);
+      }
 
       CWLDocumentResolverReference reference = new CWLDocumentResolverReference(false, new TextNode(content));
       getReferenceCache(appUrl).put(path, reference);
@@ -281,7 +286,7 @@ public class CWLDocumentResolver {
     boolean isReference = currentNode.has(RESOLVER_REFERENCE_KEY);
     boolean appReference = currentNode.has(APP_STEP_KEY) && currentNode.get(APP_STEP_KEY).isTextual();
     boolean typeReference = currentNode.has(TYPE_KEY) && currentNode.get(TYPE_KEY).isTextual()
-        && isTypeReference(currentNode.get(TYPE_KEY).textValue());
+        && isTypeReference(currentNode.get(TYPE_KEY).textValue()) && inputsOrOutputs;
     boolean isJsonPointer = currentNode.has(RESOLVER_JSON_POINTER_KEY) && parentNode != null; // we skip the first level
                                                                                               // $job
     String referencePath = null;
@@ -321,18 +326,23 @@ public class CWLDocumentResolver {
         reference.setResolving(true);
         getReferenceCache(appUrl).put(referencePath, reference);
 
-        JsonNode referenceDocumentRoot = findDocumentRoot(root, file, referencePath, isJsonPointer);
-        ParentChild parentChild = findReferencedNode(referenceDocumentRoot, referencePath);
+        JsonNode referenceDocumentRoot;
+        try {
+          referenceDocumentRoot = findDocumentRoot(root, file, referencePath, isJsonPointer);      
+          ParentChild parentChild = findReferencedNode(referenceDocumentRoot, referencePath);
 
-        Path parentPath = file.getParentFile() != null ? file.getParentFile().toPath() : Paths.get(".");
-        JsonNode resolvedNode = traverse(appUrl, root, parentPath.resolve(referencePath).toFile(), parentChild.parent, parentChild.child, false);
-        if (resolvedNode == null) {
-          return null;
+          Path parentPath = file.getParentFile() != null ? file.getParentFile().toPath() : Paths.get(".");
+          JsonNode resolvedNode = traverse(appUrl, root, parentPath.resolve(referencePath).toFile(), parentChild.parent, parentChild.child, false);
+          if (resolvedNode == null) {
+            return null;
+          }
+
+          reference.setResolvedNode(resolvedNode);
+          reference.setResolving(false);
+          getReferenceCache(appUrl).put(referencePath, reference);
+        } catch (IOException e) {
+          return currentNode;
         }
-
-        reference.setResolvedNode(resolvedNode);
-        reference.setResolving(false);
-        getReferenceCache(appUrl).put(referencePath, reference);
       }
       if (appReference) {
         getReplacements(appUrl).add(new CWLDocumentResolverReplacement(currentNode, currentNode.get(APP_STEP_KEY), referencePath));
@@ -346,14 +356,13 @@ public class CWLDocumentResolver {
       return reference.getResolvedNode();
     } else if (currentNode.isContainerNode()) {
       for (JsonNode subnode : currentNode) {
-        inputsOrOutputs = checkIsItInputsOrOutputs(currentNode, subnode, inputsOrOutputs);
-        traverse(appUrl, root, file, currentNode, subnode, inputsOrOutputs);
+        traverse(appUrl, root, file, currentNode, subnode, inputsOrOutputs || checkIsItInputsOrOutputs(currentNode, subnode));
       }
     }
     return currentNode;
   }
 
-  private static boolean checkIsItInputsOrOutputs(JsonNode currentNode, JsonNode subnode, boolean previous) {
+  private static boolean checkIsItInputsOrOutputs(JsonNode currentNode, JsonNode subnode) {
     boolean result = false;
     if(!currentNode.has(APP_STEP_KEY) && currentNode.has(CLASS_KEY)) {
       if (currentNode.has(INPUTS_KEY_LONG) && currentNode.get(INPUTS_KEY_LONG).equals(subnode)) {
@@ -458,7 +467,7 @@ public class CWLDocumentResolver {
   }
 
   private static JsonNode findDocumentRoot(JsonNode root, File file, String reference, boolean isJsonPointer)
-      throws BindingException {
+      throws BindingException, IOException {
     JsonNode startNode = root;
     if (isJsonPointer) {
       startNode = startNode.get(RESOLVER_JSON_POINTER_KEY);
@@ -481,37 +490,29 @@ public class CWLDocumentResolver {
     }
   }
 
-  private static String loadContents(File file, String path) throws BindingException {
+  private static String loadContents(File file, String path) throws BindingException, IOException {
     if (path.startsWith("http")) {
+      URL website = new URL(path);
+      URLConnection connection = website.openConnection();
+      BufferedReader in = null;
+
       try {
-        URL website = new URL(path);
-        URLConnection connection = website.openConnection();
-        BufferedReader in = null;
+        in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-        try {
-          in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-          StringBuilder response = new StringBuilder();
-          String inputLine;
-          while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-          }
-          return response.toString();
-        } finally {
-          if (in != null) {
-            in.close();
-          }
+        StringBuilder response = new StringBuilder();
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          response.append(inputLine);
         }
-      } catch (Exception e) {
-        throw new BindingException("Couldn't fetch contents from " + path);
+        return response.toString();
+      } finally {
+        if (in != null) {
+          in.close();
+        }
       }
     } else {
-      try {
-        String filePath = new File(file.getParentFile(), path).getCanonicalPath();
-        return FileUtils.readFileToString(new File(filePath), DEFAULT_ENCODING);
-      } catch (IOException e) {
-        throw new BindingException("Couldn't fetch contents from " + path);
-      }
+      String filePath = new File(file.getParentFile(), path).getCanonicalPath();
+      return FileUtils.readFileToString(new File(filePath), DEFAULT_ENCODING);
     }
   }
 
