@@ -305,7 +305,7 @@ public class CWLDocumentResolver {
       }
     }
     
-    if (isReference || isJsonPointer || typeReference || appReference || typeReplace) {
+    if (isReference || isJsonPointer  || appReference || (typeReplace && typeReference)) {
       if (isReference) {
         referencePath = currentNode.get(RESOLVER_REFERENCE_KEY).textValue();
       } else if (appReference) {
