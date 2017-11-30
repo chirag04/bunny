@@ -209,7 +209,8 @@ public class LocalContainerHandler implements ContainerHandler {
   @Override
   public synchronized void dumpContainerLogs(File errorFile) throws ContainerException {
     try {
-      Files.write(errorFile.toPath(), errorLog.getBytes());
+      if (errorLog != null)
+        Files.write(errorFile.toPath(), errorLog.getBytes());
     } catch (IOException e) {
       logger.error("Failed to create " + errorFile.getName(), e);
       throw new ContainerException("Failed to create " + errorFile.getName(), e);
