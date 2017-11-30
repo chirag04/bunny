@@ -285,7 +285,10 @@ public class JobHandlerImpl implements JobHandler {
       String standardErrorLog = bindings.getStandardErrorLog(job);
       
       if (!isSuccessful()) {
-        uploadOutputFiles(job, bindings);
+        uploadOutputFiles(job, bindings);    
+        if (standardErrorLog == null) {
+          containerHandler.dumpContainerLogs(new File(workingDir, DEFAULT_ERROR_FILE));
+        }
         return job;
       }
       
@@ -407,6 +410,16 @@ public class JobHandlerImpl implements JobHandler {
     logger.debug("getExitStatus()");
     try {
       return containerHandler.getProcessExitStatus();
+    } catch (ContainerException e) {
+      throw new ExecutorException("Couldn't get process exit value.", e);
+    }
+  }
+  
+  @Override
+  public String getErrorLog() throws ExecutorException {
+    logger.debug("getExitStatus()");
+    try {
+      return containerHandler.getProcessExitMessage();
     } catch (ContainerException e) {
       throw new ExecutorException("Couldn't get process exit value.", e);
     }

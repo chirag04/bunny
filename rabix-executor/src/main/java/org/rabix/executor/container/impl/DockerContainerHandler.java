@@ -3,13 +3,10 @@ package org.rabix.executor.container.impl;
 import static java.lang.System.getProperty;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,7 +50,6 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerClient.LogsParam;
-import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.DockerCertificateException;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -418,7 +414,7 @@ public class DockerContainerHandler implements ContainerHandler {
 
     if (logFile != null) {
       try {
-        dumpLog(containerId, logFile);
+        Files.write(logFile.toPath(), this.getProcessExitMessage().getBytes());
       } catch (Exception e) {
         logger.error("Docker container " + containerId + " failed to create log file", e);
         throw new ContainerException("Docker container " + containerId + " failed to create log file");
@@ -435,54 +431,6 @@ public class DockerContainerHandler implements ContainerHandler {
       }
     } catch (Exception e) {
       logger.error("Failed to remove container with id " + containerId, e);
-    }
-  }
-
-  /**
-   * Helper method for dumping error logs from Docker to file
-   */
-  public void dumpLog(String containerId, File logFile) throws DockerException, InterruptedException {
-    LogStream errorStream = null;
-
-    FileChannel fileChannel = null;
-    FileOutputStream fileOutputStream = null;
-    try {
-      if (logFile.exists()) {
-        logFile.delete();
-      }
-      logFile.createNewFile();
-
-      fileOutputStream = new FileOutputStream(logFile);
-      fileChannel = fileOutputStream.getChannel();
-
-      errorStream = dockerClient.logs(containerId, LogsParam.stderr());
-      while (errorStream.hasNext()) {
-        LogMessage message = errorStream.next();
-        ByteBuffer buffer = message.content();
-        fileChannel.write(buffer);
-      }
-    } catch (FileNotFoundException e) {
-      throw new DockerException("File " + logFile + " not found");
-    } catch (IOException e) {
-      throw new DockerException(e);
-    } finally {
-      if (errorStream != null) {
-        errorStream.close();
-      }
-      if (fileChannel != null) {
-        try {
-          fileChannel.close();
-        } catch (IOException e) {
-          logger.error("Failed to close file channel", e);
-        }
-      }
-      if (fileOutputStream != null) {
-        try {
-          fileOutputStream.close();
-        } catch (IOException e) {
-          logger.error("Failed to close file output stream", e);
-        }
-      }
     }
   }
 
@@ -585,7 +533,7 @@ public class DockerContainerHandler implements ContainerHandler {
       }
       return images != null ? images.contains(dockerPull) : false;
     }
-    
+
     public synchronized ImageInfo inspectImage(String dockerPull) throws DockerException, InterruptedException {
       return dockerClient.inspectImage(dockerPull);
     }
@@ -686,5 +634,13 @@ public class DockerContainerHandler implements ContainerHandler {
       throw new ContainerException(e);
     }
   }
-  
+
+  @Override
+  public String getProcessExitMessage() throws ContainerException {
+    try {
+      return this.dockerClient.logs(containerId, LogsParam.stderr()).readFully();
+    } catch (DockerException | InterruptedException e) {
+      throw new ContainerException(e);
+    }
+  } 
 }

@@ -10,7 +10,7 @@ import org.rabix.executor.container.ContainerHandler;
 public class CompletedContainerHandler implements ContainerHandler {
 
   private Job job;
-  
+
   public CompletedContainerHandler(Job job) {
     this.job = job;
   }
@@ -21,8 +21,7 @@ public class CompletedContainerHandler implements ContainerHandler {
   }
 
   @Override
-  public void stop() throws ContainerException {
-  }
+  public void stop() throws ContainerException {}
 
   @Override
   public boolean isStarted() throws ContainerException {
@@ -40,15 +39,17 @@ public class CompletedContainerHandler implements ContainerHandler {
   }
 
   @Override
-  public void dumpContainerLogs(File errorFile) throws ContainerException {
-  }
+  public void dumpContainerLogs(File errorFile) throws ContainerException {}
 
   @Override
-  public void dumpCommandLine() throws ContainerException {
-  }
+  public void dumpCommandLine() throws ContainerException {}
 
   @Override
-  public void removeContainer() {
-  }
+  public void removeContainer() {}
 
+  @Override
+  public String getProcessExitMessage() throws ContainerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

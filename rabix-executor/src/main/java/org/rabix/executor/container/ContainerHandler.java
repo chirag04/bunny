@@ -31,6 +31,11 @@ public interface ContainerHandler {
    * Get container exit status 
    */
   public int getProcessExitStatus() throws ContainerException;
+  
+  /**
+   * Get container exit status 
+   */
+  public String getProcessExitMessage() throws ContainerException;
 
   /**
    * Dumps command line into a file 

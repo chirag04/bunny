@@ -132,7 +132,7 @@ public class UserDockerContainerHandler implements ContainerHandler {
       String prefix = matcher.group(2);
       final StringBuilder prefixed = new StringBuilder();
       col.forEach(v -> prefixed.append((prefix == null ? "" : prefix + SEPARATOR) + v + SEPARATOR));
-      return value.replaceAll(pattern.pattern(), prefixed.toString().trim());
+      return value.replaceAll(pattern.pattern(), prefixed.toString().trim().replaceAll("\\$","\\\\\\$")).replaceAll("\\\\\\$", "\\\\$");
     }
   }
 
@@ -211,7 +211,7 @@ public class UserDockerContainerHandler implements ContainerHandler {
           process.waitFor();
           List<String> lines = IOUtils.readLines(process.getErrorStream());
           if (lines != null && !lines.isEmpty()) {
-            errorLog = lines.stream().reduce("", (a, b) -> a + b);
+            errorLog = lines.stream().reduce("", (a, b) -> a + "\n" + b);
           }
           return process.exitValue();
         }
@@ -316,6 +316,12 @@ public class UserDockerContainerHandler implements ContainerHandler {
       logger.error("Failed to dump command line into " + JobHandler.COMMAND_LOG);
       throw new ContainerException(e);
     }
+  }
+
+  @Override
+  public String getProcessExitMessage() throws ContainerException {
+    // TODO Auto-generated method stub
+    return null;
   }
 
 }
