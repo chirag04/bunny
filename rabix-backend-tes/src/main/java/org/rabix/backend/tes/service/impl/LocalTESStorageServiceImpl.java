@@ -3,7 +3,6 @@ package org.rabix.backend.tes.service.impl;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,7 +44,7 @@ public class LocalTESStorageServiceImpl implements TESStorageService {
         Map<String, ?> env = ImmutableMap.<String, Object>builder().put(AmazonS3Factory.ACCESS_KEY, configuration.getString(AmazonS3Factory.ACCESS_KEY))
             .put(AmazonS3Factory.SECRET_KEY, configuration.getString(AmazonS3Factory.SECRET_KEY)).build();
         try {
-          FileSystem newFileSystem = FileSystems.newFileSystem(URI.create(storageConfig), env, Thread.currentThread().getContextClassLoader());
+          FileSystems.newFileSystem(URI.create(storageConfig), env, Thread.currentThread().getContextClassLoader());
         } catch (IOException e) {
           logger.error("Failed to register s3 filesystem");
         }
@@ -106,7 +105,7 @@ public class LocalTESStorageServiceImpl implements TESStorageService {
     }
     if ((location == null || locationUri.getScheme().equals("file")) && !fileValue.getType().equals(FileType.Directory)) {
       try {
-        Path staged = workdir.resolveSibling("stagedinputs" + workdir.hashCode()).resolve("./" + path).normalize();
+        Path staged = workdir.resolveSibling("stagedinputs" + workdir.hashCode() + "/" + path).normalize();
         if (!Files.exists(staged)) {
           Files.createDirectories(staged.getParent());
           Files.copy(locationPath, staged);
