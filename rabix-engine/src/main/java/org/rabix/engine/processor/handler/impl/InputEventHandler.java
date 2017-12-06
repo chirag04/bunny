@@ -40,14 +40,19 @@ public class InputEventHandler implements EventHandler<InputUpdateEvent> {
   private  EventProcessor eventProcessor;
   @Inject
   private IntermediaryFilesService filesService;
+  
+  private boolean rootInputs = true;
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
   public void handle(InputUpdateEvent event, EventHandlingMode mode) throws EventHandlerException {
     logger.debug(event.toString());
+    if(event.getProducedByNode().equals(InternalSchemaHelper.ROOT_NAME) && rootInputs){
+      filesService.handleInputSent(event.getContextId(), event.getValue());
+    }
+    
     JobRecord job = jobService.find(event.getJobId(), event.getContextId());
-    filesService.handleInputSent(event.getContextId(), event.getValue());
     VariableRecord variable = variableService.find(event.getJobId(), event.getPortId(), LinkPortType.INPUT, event.getContextId());
 
     DAGNode node = dagNodeService.get(InternalSchemaHelper.normalizeId(job.getId()), event.getContextId(), job.getDagHash());

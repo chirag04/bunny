@@ -1,6 +1,5 @@
 package org.rabix.engine.service.impl;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,17 +9,15 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.velocity.runtime.directive.Foreach;
 import org.rabix.bindings.helper.FileValueHelper;
 import org.rabix.bindings.model.FileValue;
 import org.rabix.bindings.model.Job;
-import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
-import org.rabix.common.helper.InternalSchemaHelper;
-import org.rabix.engine.store.model.LinkRecord;
-import org.rabix.engine.store.repository.IntermediaryFilesRepository;
-import org.rabix.engine.store.repository.IntermediaryFilesRepository.IntermediaryFileEntity;
 import org.rabix.engine.service.IntermediaryFilesHandler;
 import org.rabix.engine.service.IntermediaryFilesService;
 import org.rabix.engine.service.LinkRecordService;
+import org.rabix.engine.store.repository.IntermediaryFilesRepository;
+import org.rabix.engine.store.repository.IntermediaryFilesRepository.IntermediaryFileEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +38,6 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
     this.intermediaryFilesRepository = intermediaryFilesRepository;
   }
 
-  @Override
   public void decrementFiles(UUID rootId, Set<String> checkFiles) {
     for (String path : checkFiles) {
       intermediaryFilesRepository.decrement(rootId, path);
@@ -55,36 +51,8 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
 
 
   @Override
-  public void handleJobCompleted(Job job) {
-    if (!job.isRoot()) {
-      Set<String> inputs = new HashSet<String>();
-      for (Map.Entry<String, Object> entry : job.getInputs().entrySet()) {
-        Set<FileValue> files = new HashSet(FileValueHelper.getFilesFromValue(entry.getValue()));
-        for (FileValue file : files) {
-          extractPathsFromFileValue(inputs, file);
-        }
-      }
-      decrementFiles(job.getRootId(), inputs);
-      handleUnusedFiles(job);
-    }
-  }
-
-  @Override
-  public void handleJobFailed(Job job, Job rootJob) {
+  public void handleJobFailed(Job job) {
     handleUnusedFiles(job);
-  }
-  
-  @Override
-  public void jobFailed(UUID rootId, Set<String> rootInputs) {
-    List<IntermediaryFileEntity> filesForRootIdList = intermediaryFilesRepository.get(rootId);
-    Map<String, Integer> filesForRootId = convertToMap(filesForRootIdList);
-    for(Iterator<Map.Entry<String, Integer>> it = filesForRootId.entrySet().iterator(); it.hasNext();) {
-      Entry<String, Integer> fileEntry = it.next();
-      if(!rootInputs.contains(fileEntry.getKey())) {
-        logger.debug("Removing onJobFailed: " + fileEntry.getKey());
-        filesForRootId.put(fileEntry.getKey(), 0);
-      }
-    }
   }
   
   private Map<String, Integer> convertToMap(List<IntermediaryFileEntity> filesForRootId) {
@@ -94,8 +62,7 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
     }
     return result;
   }
-  
-  @Override
+
   public void extractPathsFromFileValue(Set<String> paths, FileValue file) {
     paths.add(file.getPath());
     if(file.getSecondaryFiles()!=null)
@@ -103,8 +70,7 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
         extractPathsFromFileValue(paths, f);
       }
   }
-  
-  @Override
+
   public void addOrIncrement(UUID rootId, FileValue file, Integer usage) {
     Set<String> paths = new HashSet<String>();
     extractPathsFromFileValue(paths, file);
@@ -129,25 +95,26 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
   }
 
   @Override
-  public void handleInputSent(UUID rootId, Object input) {
-    handleInputSent(rootId, input, 1);
-  }
-  
-  @Override
-  public void handleInputSent(UUID rootId, Object input, int count) {
-    Set<FileValue> files = new HashSet<FileValue>(FileValueHelper.getFilesFromValue(input));
+  public void handleObjectSent(UUID rootId, Object o) {
+    Set<FileValue> files = new HashSet<FileValue>(FileValueHelper.getFilesFromValue(o));
     for(FileValue file: files){
-      addOrIncrement(rootId, file, count);
+      addOrIncrement(rootId, file, 1);
     }
   }
 
-  @Override
-  public void handleDanglingOutput(UUID rootId, Object input) {
-    Set<String> inputs = new HashSet<String>();
-    Set<FileValue> files = new HashSet(FileValueHelper.getFilesFromValue(input));
-    for (FileValue file : files) {
-      extractPathsFromFileValue(inputs, file);
-    }
-    decrementFiles(rootId, inputs);
+  public void handleOutput(UUID rootId, Object o) {
+    List<FileValue> filesFromValue = FileValueHelper.getFilesFromValue(o);
+    Set<String> paths = new HashSet<>();
+    filesFromValue.stream().forEach(f->{
+      paths.add(f.getPath());
+      f.getSecondaryFiles().stream().forEach(s->paths.add(s.getPath()));
+    });
+    decrementFiles(rootId, paths);
   }
+
+  @Override
+  public void handleJobDeleted(Job job) {
+    handleOutput(job.getRootId(), job.getOutputs());
+  }
+
 }

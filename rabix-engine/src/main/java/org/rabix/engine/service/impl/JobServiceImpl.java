@@ -1,7 +1,16 @@
 package org.rabix.engine.service.impl;
 
-import com.google.common.collect.Sets;
-import com.google.inject.Inject;
+import static java.util.stream.Collectors.groupingBy;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
 import org.apache.commons.configuration.Configuration;
 import org.rabix.bindings.Bindings;
 import org.rabix.bindings.BindingsFactory;
@@ -15,7 +24,12 @@ import org.rabix.engine.event.impl.InitEvent;
 import org.rabix.engine.event.impl.JobStatusEvent;
 import org.rabix.engine.metrics.MetricsHelper;
 import org.rabix.engine.processor.EventProcessor;
-import org.rabix.engine.service.*;
+import org.rabix.engine.service.AppService;
+import org.rabix.engine.service.DAGNodeService;
+import org.rabix.engine.service.GarbageCollectionService;
+import org.rabix.engine.service.IntermediaryFilesService;
+import org.rabix.engine.service.JobService;
+import org.rabix.engine.service.JobServiceException;
 import org.rabix.engine.status.EngineStatusCallback;
 import org.rabix.engine.status.EngineStatusCallbackException;
 import org.rabix.engine.store.model.JobRecord;
@@ -25,12 +39,8 @@ import org.rabix.engine.store.repository.TransactionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
+import com.google.common.collect.Sets;
+import com.google.inject.Inject;
 
 public class JobServiceImpl implements JobService {
 
@@ -260,7 +270,7 @@ public class JobServiceImpl implements JobService {
   @Override
   public void handleJobFailed(final Job failedJob){
     logger.warn("Job {}, rootId: {} failed: {}", failedJob.getName(), failedJob.getRootId(), failedJob.getMessage());
-    intermediaryFilesService.handleJobFailed(failedJob, jobRepository.get(failedJob.getRootId()));
+    intermediaryFilesService.handleJobFailed(failedJob);
 
     try {
       engineStatusCallback.onJobFailed(failedJob.getId(), failedJob.getRootId());
