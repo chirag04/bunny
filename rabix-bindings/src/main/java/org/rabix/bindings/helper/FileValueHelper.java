@@ -33,8 +33,7 @@ public class FileValueHelper {
       List<Object> ret = new ArrayList<>();
       for (Object o : (List<?>) value) {
         Object newValue = updateFileValues(o, fileTransformer);
-        if (newValue != null)
-          ret.add(newValue);
+        ret.add(newValue);
       }
       return ret;
     } else if (value instanceof Map) {
