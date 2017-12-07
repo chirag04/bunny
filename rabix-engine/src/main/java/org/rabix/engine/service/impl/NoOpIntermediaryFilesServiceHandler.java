@@ -1,8 +1,8 @@
 package org.rabix.engine.service.impl;
 
 import java.util.Set;
+import java.util.UUID;
 
-import org.rabix.bindings.model.Job;
 import org.rabix.engine.service.IntermediaryFilesHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +16,8 @@ public class NoOpIntermediaryFilesServiceHandler implements IntermediaryFilesHan
   public NoOpIntermediaryFilesServiceHandler() {}
 
   @Override
-  public void handleUnusedFiles(Job job, Set<String> unusedFiles) {
-    logger.debug(String.format("handleUnusedFiles(%s)", job.getRootId()));
+  public void handleUnusedFiles(UUID rootId, Set<String> unusedFiles) {
+    logger.debug(String.format("handleUnusedFiles(%s)", rootId));
   }
 
 }

@@ -16,11 +16,10 @@ public class InMemoryIntermediaryFilesRepository implements IntermediaryFilesRep
   @Override
   public void insert(UUID rootId, String filename, Integer count) {
 
-    if(intermediaryFilesRepository.containsKey(rootId)) {
+    if (intermediaryFilesRepository.containsKey(rootId)) {
       List<IntermediaryFileEntity> intermediaryPerRoot = intermediaryFilesRepository.get(rootId);
       intermediaryPerRoot.add(new IntermediaryFileEntity(rootId, filename, count));
-    }
-    else {
+    } else {
       List<IntermediaryFileEntity> intermediaryPerRoot = new ArrayList<>();
       intermediaryPerRoot.add(new IntermediaryFileEntity(rootId, filename, count));
       intermediaryFilesRepository.put(rootId, intermediaryPerRoot);
@@ -29,10 +28,10 @@ public class InMemoryIntermediaryFilesRepository implements IntermediaryFilesRep
 
   @Override
   public void update(UUID rootId, String filename, Integer count) {
-    if(intermediaryFilesRepository.containsKey(rootId)) {
+    if (intermediaryFilesRepository.containsKey(rootId)) {
       List<IntermediaryFileEntity> intermediaryPerRoot = intermediaryFilesRepository.get(rootId);
-      for(IntermediaryFileEntity file: intermediaryPerRoot) {
-        if(file.getFilename().equals(filename)) {
+      for (IntermediaryFileEntity file : intermediaryPerRoot) {
+        if (file.getFilename().equals(filename)) {
           file.setCount(count);
           break;
         }
@@ -42,13 +41,13 @@ public class InMemoryIntermediaryFilesRepository implements IntermediaryFilesRep
 
   @Override
   public void delete(UUID rootId, String filename) {
-    if(intermediaryFilesRepository.containsKey(rootId)) {
+    if (intermediaryFilesRepository.containsKey(rootId)) {
       List<IntermediaryFileEntity> intermediaryPerRoot = intermediaryFilesRepository.get(rootId);
       for (Iterator<IntermediaryFileEntity> iterator = intermediaryPerRoot.iterator(); iterator.hasNext();) {
         IntermediaryFileEntity file = iterator.next();
         if (file.getFilename().equals(filename)) {
-            iterator.remove();
-            break;
+          iterator.remove();
+          break;
         }
       }
     }
@@ -56,14 +55,14 @@ public class InMemoryIntermediaryFilesRepository implements IntermediaryFilesRep
 
   @Override
   public void delete(UUID rootId) {
-    if(intermediaryFilesRepository.containsKey(rootId)) {
+    if (intermediaryFilesRepository.containsKey(rootId)) {
       intermediaryFilesRepository.remove(rootId);
     }
   }
 
   @Override
   public List<IntermediaryFileEntity> get(UUID rootId) {
-    if(intermediaryFilesRepository.containsKey(rootId)) {
+    if (intermediaryFilesRepository.containsKey(rootId)) {
       return intermediaryFilesRepository.get(rootId);
     }
     return Collections.emptyList();
@@ -71,17 +70,39 @@ public class InMemoryIntermediaryFilesRepository implements IntermediaryFilesRep
 
   @Override
   public void deleteByRootIds(Set<UUID> rootIds) {
-    for(UUID rootId: rootIds) {
+    for (UUID rootId : rootIds) {
       intermediaryFilesRepository.remove(rootId);
     }
   }
 
   @Override
   public void decrement(UUID rootId, String filename) {
+    crement(rootId, filename, -1);
+  }
+
+  private void crement(UUID rootId, String filename, int i) {
+    List<IntermediaryFileEntity> list = intermediaryFilesRepository.get(rootId);
+    if (list == null) {
+      list = new ArrayList<>();
+      intermediaryFilesRepository.put(rootId, list);
+    }
+    IntermediaryFileEntity found = null;
+    for (IntermediaryFileEntity ent : list) {
+      if (ent.getFilename().equals(filename)) {
+        found = ent;
+      }
+    }
+    if (found == null) {
+      found = new IntermediaryFileEntity(rootId, filename, 1);
+      list.add(found);
+    } else {
+      found.setCount(found.getCount() + i);
+    }
 
   }
+
   @Override
   public void increment(UUID rootId, String filename) {
-
+    crement(rootId, filename, 1);
   }
 }

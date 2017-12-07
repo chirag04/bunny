@@ -49,7 +49,7 @@ public class InputEventHandler implements EventHandler<InputUpdateEvent> {
   public void handle(InputUpdateEvent event, EventHandlingMode mode) throws EventHandlerException {
     logger.debug(event.toString());
     if(event.getProducedByNode().equals(InternalSchemaHelper.ROOT_NAME) && rootInputs){
-      filesService.handleInputSent(event.getContextId(), event.getValue());
+      filesService.increment(event.getContextId(), event.getValue());
     }
     
     JobRecord job = jobService.find(event.getJobId(), event.getContextId());

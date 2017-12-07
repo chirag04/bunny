@@ -106,6 +106,13 @@ public class OutputEventHandler implements EventHandler<OutputUpdateEvent> {
       if (newEvent != null)
         eventProcessor.send(newEvent);
     }
+    
+    if (!sourceJob.isScattered()) {
+      filesService.increment(event.getContextId(), value);
+      if (links.isEmpty()) {
+        filesService.decrement(event.getContextId(), value);
+      }
+    }
 
     if (sourceJob.isCompleted() && (sourceJob.isScatterWrapper() || sourceJob.isContainer())) {
       eventProcessor.send(new JobStatusEvent(sourceJob.getId(), event.getContextId(), JobState.COMPLETED, createJob(sourceJob, JobStatus.COMPLETED).getOutputs(),

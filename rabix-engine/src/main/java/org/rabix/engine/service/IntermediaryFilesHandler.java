@@ -1,11 +1,10 @@
 package org.rabix.engine.service;
 
 import java.util.Set;
-
-import org.rabix.bindings.model.Job;
+import java.util.UUID;
 
 public interface IntermediaryFilesHandler {
 
- public void handleUnusedFiles(Job job, Set<String> unusedFiles);
+ public void handleUnusedFiles(UUID rootId, Set<String> unusedFiles);
 
 }

@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.velocity.runtime.directive.Foreach;
 import org.rabix.bindings.helper.FileValueHelper;
 import org.rabix.bindings.model.FileValue;
 import org.rabix.bindings.model.Job;
@@ -45,14 +44,13 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
   }
   
   @Override
-  public void handleUnusedFiles(Job job){
-    fileHandler.handleUnusedFiles(job, getUnusedFiles(job.getRootId()));
+  public void handleUnusedFiles(UUID rootId){
+    fileHandler.handleUnusedFiles(rootId, getUnusedFiles(rootId));
   }
-
 
   @Override
   public void handleJobFailed(Job job) {
-    handleUnusedFiles(job);
+
   }
   
   private Map<String, Integer> convertToMap(List<IntermediaryFileEntity> filesForRootId) {
@@ -95,14 +93,15 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
   }
 
   @Override
-  public void handleObjectSent(UUID rootId, Object o) {
+  public void increment(UUID rootId, Object o) {
     Set<FileValue> files = new HashSet<FileValue>(FileValueHelper.getFilesFromValue(o));
     for(FileValue file: files){
       addOrIncrement(rootId, file, 1);
     }
   }
 
-  public void handleOutput(UUID rootId, Object o) {
+  @Override
+  public void decrement(UUID rootId, Object o) {
     List<FileValue> filesFromValue = FileValueHelper.getFilesFromValue(o);
     Set<String> paths = new HashSet<>();
     filesFromValue.stream().forEach(f->{
@@ -114,7 +113,7 @@ public class IntermediaryFilesServiceImpl implements IntermediaryFilesService {
 
   @Override
   public void handleJobDeleted(Job job) {
-    handleOutput(job.getRootId(), job.getOutputs());
+    decrement(job.getRootId(), job.getOutputs());
   }
 
 }

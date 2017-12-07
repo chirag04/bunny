@@ -1,23 +1,43 @@
 package org.rabix.engine.service.impl;
 
-import com.google.inject.Inject;
-import org.apache.commons.configuration.Configuration;
-import org.rabix.engine.metrics.MetricsHelper;
-import org.rabix.engine.service.GarbageCollectionService;
-import org.rabix.engine.store.model.ContextRecord;
-import org.rabix.engine.store.model.ContextRecord.ContextStatus;
-import org.rabix.engine.store.model.JobRecord;
-import org.rabix.engine.store.model.LinkRecord;
-import org.rabix.engine.store.repository.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
+
+import org.apache.commons.configuration.Configuration;
+import org.rabix.bindings.model.dag.DAGLinkPort.LinkPortType;
+import org.rabix.engine.metrics.MetricsHelper;
+import org.rabix.engine.service.GarbageCollectionService;
+import org.rabix.engine.service.IntermediaryFilesService;
+import org.rabix.engine.store.model.ContextRecord;
+import org.rabix.engine.store.model.ContextRecord.ContextStatus;
+import org.rabix.engine.store.model.JobRecord;
+import org.rabix.engine.store.model.LinkRecord;
+import org.rabix.engine.store.model.VariableRecord;
+import org.rabix.engine.store.repository.ContextRecordRepository;
+import org.rabix.engine.store.repository.DAGRepository;
+import org.rabix.engine.store.repository.EventRepository;
+import org.rabix.engine.store.repository.IntermediaryFilesRepository;
+import org.rabix.engine.store.repository.JobRecordRepository;
+import org.rabix.engine.store.repository.JobRepository;
+import org.rabix.engine.store.repository.JobStatsRecordRepository;
+import org.rabix.engine.store.repository.LinkRecordRepository;
+import org.rabix.engine.store.repository.TransactionHelper;
+import org.rabix.engine.store.repository.VariableRecordRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.inject.Inject;
 
 public class GarbageCollectionServiceImpl implements GarbageCollectionService {
 
@@ -46,6 +66,8 @@ public class GarbageCollectionServiceImpl implements GarbageCollectionService {
           JobRecord.JobState.ABORTED,
           JobRecord.JobState.FAILED));
 
+  private IntermediaryFilesService filesService;
+
   @Inject
   public GarbageCollectionServiceImpl(JobRepository jobRepository,
                                       JobRecordRepository jobRecordRepository,
@@ -58,7 +80,7 @@ public class GarbageCollectionServiceImpl implements GarbageCollectionService {
                                       IntermediaryFilesRepository intermediaryFilesRepository,
                                       TransactionHelper transactionHelper,
                                       MetricsHelper metricsHelper,
-                                      Configuration configuration) {
+                                      Configuration configuration, IntermediaryFilesService filesService) {
     this.jobRepository = jobRepository;
     this.jobRecordRepository = jobRecordRepository;
     this.jobStatsRecordRepository = jobStatsRecordRepository;
@@ -68,7 +90,7 @@ public class GarbageCollectionServiceImpl implements GarbageCollectionService {
     this.dagRepository = dagRepository;
     this.contextRecordRepository = contextRecordRepository;
     this.intermediaryFilesRepository = intermediaryFilesRepository;
-
+    this.filesService = filesService;
     this.transactionHelper = transactionHelper;
     this.metricsHelper = metricsHelper;
 
@@ -149,6 +171,11 @@ public class GarbageCollectionServiceImpl implements GarbageCollectionService {
       jobRecordRepository.delete(record.getExternalId(), record.getRootId());
       jobRepository.delete(record.getRootId(), new HashSet<>(Collections.singletonList(record.getExternalId())));
       linkRecordRepository.delete(record.getId(), rootId);
+      List<VariableRecord> variables = variableRecordRepository.getByType(record.getId(), LinkPortType.OUTPUT, rootId);
+      variables.stream().forEach(v->{
+        filesService.decrement(rootId, v.getValue());
+      });
+      filesService.handleUnusedFiles(rootId);
       variableRecordRepository.delete(record.getId(), rootId);
     });
 
