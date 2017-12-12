@@ -358,6 +358,17 @@ public class CWLFileValueHelper extends CWLBeanHelper {
     }
     return null;
   }
+  
+  private static URI getFullURI(String in, Path workDir) throws URISyntaxException{
+    URI uri = URI.create(in);
+    if (uri.getScheme() == null) {
+      uri = new URI("file", in, null);
+    }
+    if (uri.isOpaque()) {
+      uri = new URI("file", workDir.resolve(uri.getSchemeSpecificPart()).toAbsolutePath().toString(), null);
+    }
+    return uri;
+  }
 
   public static void buildMissingInfo(Object value, HashAlgorithm alg, Path workDir) throws IOException, URISyntaxException {
     String path = getPath(value);
@@ -366,13 +377,7 @@ public class CWLFileValueHelper extends CWLBeanHelper {
 
     if (path == null) {
       if (location != null) {
-        URI uri = URI.create(location);
-        if (uri.getScheme() == null) {
-          uri = new URI("file", location, null);
-        }
-        if (uri.isOpaque()) {
-          uri = new URI("file", workDir.resolve(uri.getSchemeSpecificPart()).toAbsolutePath().toString(), null);
-        }
+        URI uri = getFullURI(location, workDir);
         location = uri.toString();
         actual = Paths.get(uri);
         if (!actual.isAbsolute()) {
@@ -385,21 +390,12 @@ public class CWLFileValueHelper extends CWLBeanHelper {
     }
 
     if (location == null) {
-      actual = workDir.resolve(path);
-      location = actual.toUri().toString();
-    } else {
-      URI temp = URI.create(location);
-      if (temp.getScheme() != null) {
-        actual = Paths.get(temp);
-      } else {
-        actual = workDir.resolve(path);
-      }
+      location = workDir.resolve(path).toUri().toString();
     }
-    
     if (!Paths.get(path).isAbsolute()) {
       path = workDir.resolve(path).toAbsolutePath().toString();
     }
-
+    
     String name = getName(value);
     if (name == null) {
       setNames(actual, value);
@@ -411,7 +407,12 @@ public class CWLFileValueHelper extends CWLBeanHelper {
 
     setPath(path, value);
     setLocation(location, value);
-
+    
+    actual = Paths.get(path);
+    if (!Files.exists(actual)) {
+      actual = Paths.get(getFullURI(location, workDir));
+    }
+    
     if (getSize(value) == null)
       setSize(Files.size(actual), value);
 
