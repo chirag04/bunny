@@ -282,7 +282,9 @@ public class JobHandlerImpl implements JobHandler {
       
       if (standardErrorLog == null) {
         try {
-          Files.write(workingDir.toPath().resolve(DEFAULT_ERROR_FILE), containerHandler.getProcessExitMessage().getBytes());
+          String processExitMessage = containerHandler.getProcessExitMessage();
+          if (processExitMessage != null)
+            Files.write(workingDir.toPath().resolve(DEFAULT_ERROR_FILE), processExitMessage.getBytes());
         } catch (IOException e) {
           throw new ExecutorException("Couldn't write error file", e);
         }
