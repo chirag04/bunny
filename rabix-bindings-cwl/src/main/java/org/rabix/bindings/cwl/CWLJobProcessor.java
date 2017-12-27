@@ -84,11 +84,11 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
     Map<String, CWLResource> childHints = childJob.getHints().stream().collect(Collectors.toMap(CWLResource::getType, Function.identity()));
 
     for (CWLResource resource : parentJob.getHints()) {
-      if (!resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
+      if (resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
         childJob.setHint(resource);
     }
     for (CWLResource resource : step.getHints()) {
-      if (!resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
+      if (resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
         childJob.setHint(resource);
     }
   }
@@ -105,11 +105,11 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
     Map<String, CWLResource> childReqs = childJob.getRequirements().stream().collect(Collectors.toMap(CWLResource::getType, Function.identity()));
     
     for(CWLResource resource: parentReq) {
-      if(!resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
+      if(resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
         childJob.setRequirement(resource);
     }
     for(CWLResource resource: stepReq) {
-      if(!resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
+      if(resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
         childJob.setRequirement(resource);
     }
   }
