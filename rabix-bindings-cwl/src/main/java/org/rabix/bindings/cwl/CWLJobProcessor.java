@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
   public static final String DOT_SEPARATOR = ".";
   public static final String SLASH_SEPARATOR = "/";
   public static final String SBG_PREFIX = "sbg:";
-  
+
   public CWLJob process(CWLJob job) throws BeanProcessorException {
     try {
       return process(null, job);
@@ -41,23 +42,23 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
       throw new BeanProcessorException("Failed to process CWLv1 Job.", e);
     }
   }
-  
+
   private CWLJob process(CWLJob parentJob, CWLJob job) throws CWLException {
     if (job.getId() == null) {
       String workflowId = parentJob != null ? parentJob.getId() : null;
-      String id = workflowId != null? workflowId + DOT_SEPARATOR + InternalSchemaHelper.ROOT_NAME : InternalSchemaHelper.ROOT_NAME;
+      String id = workflowId != null ? workflowId + DOT_SEPARATOR + InternalSchemaHelper.ROOT_NAME : InternalSchemaHelper.ROOT_NAME;
       job.setId(id);
     }
-    if(job.getApp().getCwlVersion() == null && parentJob != null) {
+    if (job.getApp().getCwlVersion() == null && parentJob != null) {
       job.getApp().setCwlVersion(parentJob.getApp().getCwlVersion());
     }
 
-    if(job.getApp().getAppFileLocation() == null && parentJob != null) {
+    if (job.getApp().getAppFileLocation() == null && parentJob != null) {
       job.getApp().setAppFileLocation(parentJob.getApp().getAppFileLocation());
     }
-    
+
     processElements(null, job);
-    
+
     if (job.getApp().isWorkflow()) {
       CWLWorkflow workflow = (CWLWorkflow) job.getApp();
       for (CWLStep step : workflow.getSteps()) {
@@ -73,47 +74,49 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
     }
     return job;
   }
- 
+
   /**
    * @param step
    * @param parentJob
-   * @param childJob
-   * Process hints in workflow 
+   * @param childJob Process hints in workflow
    */
   public void processHints(CWLStep step, CWLJobApp parentJob, CWLJobApp childJob) {
     Map<String, CWLResource> childHints = childJob.getHints().stream().collect(Collectors.toMap(CWLResource::getType, Function.identity()));
-
+    
     for (CWLResource resource : parentJob.getHints()) {
-      if (resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
-        childJob.setHint(resource);
+      checkInheritance(r -> childJob.setHint(r), childHints, resource);
     }
     for (CWLResource resource : step.getHints()) {
-      if (resource.getType().startsWith(SBG_PREFIX) || !childHints.containsKey(resource.getType()))
-        childJob.setHint(resource);
+      checkInheritance(r -> childJob.setHint(r), childHints, resource);
     }
   }
-  
+
   /**
    * @param step
    * @param parentJob
-   * @param childJob
-   * Process requirements in workflow
+   * @param childJob Process requirements in workflow
    */
   public void processRequirements(CWLStep step, CWLJobApp parentJob, CWLJobApp childJob) {
     List<CWLResource> parentReq = parentJob.getRequirements();
     List<CWLResource> stepReq = step.getRequirements();
     Map<String, CWLResource> childReqs = childJob.getRequirements().stream().collect(Collectors.toMap(CWLResource::getType, Function.identity()));
-    
-    for(CWLResource resource: parentReq) {
-      if(resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
-        childJob.setRequirement(resource);
+
+    for (CWLResource resource : parentReq) {
+      checkInheritance(r -> childJob.setRequirement(r), childReqs, resource);
     }
-    for(CWLResource resource: stepReq) {
-      if(resource.getType().startsWith(SBG_PREFIX) || !childReqs.containsKey(resource.getType()))
-        childJob.setRequirement(resource);
+    for (CWLResource resource : stepReq) {
+      checkInheritance(r -> childJob.setRequirement(r), childReqs, resource);
     }
   }
-  
+
+  private void checkInheritance(Consumer<CWLResource> setter, Map<String, CWLResource> childReqs, CWLResource resource) {
+    CWLResource childRes = childReqs.get(resource.getType());
+    if (childRes == null)
+      setter.accept(resource);
+    else if(resource.getType().startsWith(SBG_PREFIX))
+      resource.getRaw().entrySet().stream().forEach(e -> childRes.add(e.getKey(), e.getValue()));
+  }
+
   /**
    * Process Job inputs, outputs and data links
    */
@@ -141,12 +144,12 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
   private void createDataLinks(CWLWorkflow workflow) throws CWLException {
     for (CWLOutputPort port : workflow.getOutputs()) {
       port.setId(Draft2ToCWLConverter.convertPortID(port.getId()));
-      
+
       List<String> sources = transformSource(port.getSource());
       for (int position = 0; position < sources.size(); position++) {
         String destination = port.getId();
-        LinkMerge linkMerge = port.getLinkMerge() != null? LinkMerge.valueOf(port.getLinkMerge()) : LinkMerge.merge_nested;
-        
+        LinkMerge linkMerge = port.getLinkMerge() != null ? LinkMerge.valueOf(port.getLinkMerge()) : LinkMerge.merge_nested;
+
         String source = sources.get(position);
         source = Draft2ToCWLConverter.convertSource(source);
         source = CWLSchemaHelper.normalizeId(source);
@@ -156,20 +159,20 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
     }
     for (CWLStep step : workflow.getSteps()) {
       step.setId(Draft2ToCWLConverter.convertStepID(step.getId()));
-      
+
       List<CWLDataLink> dataLinks = new ArrayList<>();
       for (Map<String, Object> input : step.getInputs()) {
-        
+
         List<String> sources = transformSource(CWLBindingHelper.getSource(input));
         for (int position = 0; position < sources.size(); position++) {
           String destination = CWLBindingHelper.getId(input);
           destination = Draft2ToCWLConverter.convertDestinationId(destination);
           destination = step.getId() + SLASH_SEPARATOR + destination;
           LinkMerge linkMerge = CWLBindingHelper.getLinkMerge(input) != null ? LinkMerge.valueOf(CWLBindingHelper.getLinkMerge(input)) : LinkMerge.merge_nested;
-          
+
           String source = sources.get(position);
           source = Draft2ToCWLConverter.convertSource(source);
-          
+
           source = CWLSchemaHelper.normalizeId(source);
           CWLDataLink dataLink = new CWLDataLink(source, destination, linkMerge, position + 1, false);
           dataLinks.add(dataLink);
@@ -182,7 +185,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
   @SuppressWarnings("unchecked")
   private List<String> transformSource(Object source) throws CWLException {
     if (source == null) {
-      return Collections.<String> emptyList();
+      return Collections.<String>emptyList();
     }
     List<String> transformed = new ArrayList<>();
     if (source instanceof String) {
@@ -200,7 +203,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
    */
   private void processPorts(CWLJob parentJob, CWLJob job, List<? extends ApplicationPort> ports) throws CWLException {
     for (ApplicationPort port : ports) {
-      setScatter(job, port);  // if it's a container
+      setScatter(job, port); // if it's a container
       if (parentJob != null && parentJob.getApp().isWorkflow()) {
         // if it's a container
         CWLWorkflow workflowApp = (CWLWorkflow) parentJob.getApp();
@@ -210,7 +213,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
         CWLWorkflow workflowApp = (CWLWorkflow) job.getApp();
         processDataLinks(workflowApp.getDataLinks(), port, job, false);
       }
-      
+
       // handle standard out
       if (job.getApp().isCommandLineTool() && port instanceof CWLOutputPort) {
         Object type = port.getSchema();
@@ -239,7 +242,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
       }
     }
   }
-  
+
   @SuppressWarnings("unchecked")
   private void setScatter(CWLJob job, ApplicationPort port) throws CWLException {
     Object scatterObj = job.getScatter();
@@ -271,9 +274,9 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
    * Process data links
    */
   private void processDataLinks(List<CWLDataLink> dataLinks, ApplicationPort port, CWLJob job, boolean strip) {
-    for (CWLDataLink dataLink : dataLinks) {    
+    for (CWLDataLink dataLink : dataLinks) {
       String destination = dataLink.getDestination();
-      
+
       String scatter = null;
       if (job.getId().contains(DOT_SEPARATOR)) {
         String mod = job.getId().substring(job.getId().indexOf(DOT_SEPARATOR) + 1);
@@ -284,7 +287,7 @@ public class CWLJobProcessor implements BeanProcessor<CWLJob> {
       } else {
         scatter = port.getId();
       }
-      
+
       // TODO fix
       if (destination.equals(scatter) && (dataLink.getScattered() == null || !dataLink.getScattered())) {
         dataLink.setScattered(port.getScatter());
