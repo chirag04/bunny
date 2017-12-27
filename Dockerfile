@@ -2,7 +2,7 @@ FROM maven:3.5-jdk-8 as builder
 
 COPY . /opt/bunny
 WORKDIR /opt/bunny
-RUN mvn install -P all
+RUN mvn install -pl rabix-cli -P all,tes -am
 RUN tar xzf rabix-cli/target/rabix-cli-*-release.tar.gz
 
 FROM openjdk:8-jre-slim
