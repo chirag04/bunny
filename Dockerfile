@@ -9,3 +9,9 @@ FROM openjdk:8-jre-slim
 
 COPY --from=builder /opt/bunny/rabix-cli-* /opt/rabix-cli
 RUN ln -s /opt/rabix-cli/rabix /usr/bin/rabix
+
+# install python3.6
+RUN echo 'deb http://ftp.de.debian.org/debian testing main' >> /etc/apt/sources.list
+RUN echo 'APT::Default-Release "stable";' | tee -a /etc/apt/apt.conf.d/00local
+RUN apt-get update
+RUN apt-get -t testing install python3.6 python3-pip -y
