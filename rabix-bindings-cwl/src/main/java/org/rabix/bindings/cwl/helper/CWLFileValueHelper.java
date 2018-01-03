@@ -1,6 +1,7 @@
 package org.rabix.bindings.cwl.helper;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -228,19 +229,21 @@ public class CWLFileValueHelper extends CWLBeanHelper {
    */
   private static String loadContents(Object fileData) throws IOException {
     String path = getPath(fileData);
-    Path pathP = Paths.get(path);
-    if (!Files.exists(pathP)) {
-      return new String(Files.readAllBytes(Paths.get(URI.create(getLocation(fileData)))), "UTF-8");
-    }
-    InputStream is = null;
+    InputStream inputStream = null;
     try {
-      return new String(Files.readAllBytes(pathP), "UTF-8");
-    } finally {
-      if (is != null) {
+      File file = new File(path);
+      inputStream = new FileInputStream(file);
+      int bufferSize = file.length() > 0 && file.length() < CONTENTS_NUMBER_OF_BYTES ? (int) file.length() : CONTENTS_NUMBER_OF_BYTES;
+      byte [] buffer = new byte[bufferSize];
+      inputStream.read(buffer);
+      return new String(buffer, "UTF-8");
+    }
+    finally {
+      if (inputStream != null) {
         try {
-          is.close();
+          inputStream.close();
         } catch (IOException e) {
-          // do nothing
+           // do nothing
         }
       }
     }
@@ -383,17 +386,23 @@ public class CWLFileValueHelper extends CWLBeanHelper {
         return;
       }
     }
-    
+
     if (location == null) {
       actual = workDir.resolve(path);
       location = actual.toUri().toString();
     } else {
-      actual = Paths.get(URI.create(location));
-    }
-    if(!Paths.get(path).isAbsolute()){
-      path=workDir.resolve(path).toAbsolutePath().toString();
+      URI temp = URI.create(location);
+      if (temp.getScheme() != null) {
+        actual = Paths.get(temp);
+      } else {
+        actual = workDir.resolve(path);
+      }
     }
     
+    if (!Paths.get(path).isAbsolute()) {
+      path = workDir.resolve(path).toAbsolutePath().toString();
+    }
+
     String name = getName(value);
     if (name == null) {
       setNames(actual, value);
@@ -402,10 +411,10 @@ public class CWLFileValueHelper extends CWLBeanHelper {
         path = Paths.get(path).resolveSibling(name).toString();
       }
     }
-    
+
     setPath(path, value);
     setLocation(location, value);
-    
+
     if (getSize(value) == null)
       setSize(Files.size(actual), value);
 
