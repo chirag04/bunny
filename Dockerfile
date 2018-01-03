@@ -15,3 +15,4 @@ RUN echo 'deb http://ftp.de.debian.org/debian testing main' >> /etc/apt/sources.
 RUN echo 'APT::Default-Release "stable";' | tee -a /etc/apt/apt.conf.d/00local
 RUN apt-get update
 RUN apt-get -t testing install python3.6 python3-pip -y
+RUN pip3 install --no-cache-dir requests boto3
